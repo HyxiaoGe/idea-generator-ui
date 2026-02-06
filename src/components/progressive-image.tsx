@@ -141,7 +141,7 @@ export function ProgressiveImage({
               <img
                 src={thumbnail}
                 alt={alt}
-                className="h-full w-full object-cover blur-xl scale-110"
+                className="h-full w-full scale-110 object-cover blur-xl"
               />
             )}
 
@@ -200,7 +200,7 @@ export function ProgressiveImage({
       </AnimatePresence>
 
       {loadingState === "loading" && !showLoader && loaderSize === "sm" && (
-        <div className="absolute bottom-2 right-2">
+        <div className="absolute right-2 bottom-2">
           <div className="rounded-full bg-black/60 p-1.5 backdrop-blur-sm">
             <motion.div
               animate={{ rotate: 360 }}

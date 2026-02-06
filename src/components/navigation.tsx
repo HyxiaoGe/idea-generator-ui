@@ -1,6 +1,7 @@
 "use client";
 
-import { Settings, ImageIcon, Video, Folder, BookTemplate, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, ImageIcon, Video, Folder, BookTemplate, Sun, Moon, LogIn } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "./ui/button";
 import {
@@ -13,6 +14,8 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useTheme } from "@/components/theme/theme-provider";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useQuota } from "@/lib/quota/quota-context";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 
@@ -21,6 +24,10 @@ export function Navigation() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme, toggleThemeWithAnimation } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const { user, isAuthenticated, login, logout } = useAuth();
+  const { quota: quotaData } = useQuota();
 
   const contentType = (searchParams.get("type") as "image" | "video") || "image";
   const isHomePage = pathname === "/";
@@ -49,13 +56,15 @@ export function Navigation() {
     });
   };
 
-  const quota = {
-    used: 327,
-    total: 1000,
-    percentage: 32.7,
-  };
-
-  const userPlan = "Pro";
+  // Compute quota display from real data or fallback
+  const quota = quotaData
+    ? {
+        used: quotaData.global_used,
+        total: quotaData.global_limit,
+        percentage:
+          quotaData.global_limit > 0 ? (quotaData.global_used / quotaData.global_limit) * 100 : 0,
+      }
+    : { used: 0, total: 0, percentage: 0 };
 
   const getQuotaColor = () => {
     if (quota.percentage > 95) return "bg-red-500";
@@ -69,8 +78,14 @@ export function Navigation() {
     pathname === "/components" ||
     pathname === "/pages-overview";
 
+  const handleLogout = () => {
+    logout();
+    toast.success("已退出登录");
+    router.push("/");
+  };
+
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-2xl transition-colors">
+    <nav className="border-border bg-background/80 sticky top-0 z-50 border-b backdrop-blur-2xl transition-colors">
       <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-6">
         {/* Left: Logo */}
         <motion.button
@@ -92,14 +107,14 @@ export function Navigation() {
           >
             <ImageIcon className="h-5 w-5 text-white" />
           </motion.div>
-          <span className="text-lg font-semibold text-text-primary transition-colors group-hover:bg-gradient-to-r group-hover:from-[#7C3AED] group-hover:to-[#2563EB] group-hover:bg-clip-text group-hover:text-transparent">
+          <span className="text-text-primary text-lg font-semibold transition-colors group-hover:bg-gradient-to-r group-hover:from-[#7C3AED] group-hover:to-[#2563EB] group-hover:bg-clip-text group-hover:text-transparent">
             AI 创作工坊
           </span>
         </motion.button>
 
         {/* Center: Content Type Tabs (only on home page) */}
         {isHomePage && (
-          <div className="flex items-center gap-1 rounded-xl bg-surface p-1 shadow-sm">
+          <div className="bg-surface flex items-center gap-1 rounded-xl p-1 shadow-sm">
             <motion.button
               onClick={() => handleContentTypeChange("image")}
               className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-sm font-medium transition-all duration-200 ${
@@ -172,7 +187,7 @@ export function Navigation() {
               {pathname === "/gallery" && (
                 <motion.div
                   layoutId="navIndicator"
-                  className="absolute -bottom-px left-0 right-0 h-0.5 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-sm shadow-[#7C3AED]/50"
+                  className="absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-sm shadow-[#7C3AED]/50"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
@@ -206,7 +221,7 @@ export function Navigation() {
               {pathname === "/templates" && (
                 <motion.div
                   layoutId="navIndicator"
-                  className="absolute -bottom-px left-0 right-0 h-0.5 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-sm shadow-[#7C3AED]/50"
+                  className="absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-sm shadow-[#7C3AED]/50"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
@@ -214,7 +229,7 @@ export function Navigation() {
           </motion.div>
 
           {/* Divider */}
-          <div className="mx-1 h-6 w-px bg-border" />
+          <div className="bg-border mx-1 h-6 w-px" />
 
           {/* Theme Toggle Button */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -222,29 +237,35 @@ export function Navigation() {
               variant="ghost"
               size="icon"
               onClick={handleThemeToggle}
-              className="group relative rounded-lg text-text-secondary transition-all hover:bg-surface-secondary hover:text-text-primary"
-              title={theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
+              className="group text-text-secondary hover:bg-surface-secondary hover:text-text-primary relative rounded-lg transition-all"
+              title={!mounted ? "切换主题" : theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
             >
-              <motion.div
-                initial={false}
-                animate={{ rotate: theme === "dark" ? 0 : 180 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-5 w-5 transition-all group-hover:text-amber-400 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                ) : (
-                  <Moon className="h-5 w-5 transition-all group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
-                )}
-              </motion.div>
-              <motion.div
-                className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
-                style={{
-                  background:
-                    theme === "dark"
-                      ? "radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%)"
-                      : "radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%)",
-                }}
-              />
+              {mounted ? (
+                <motion.div
+                  initial={false}
+                  animate={{ rotate: theme === "dark" ? 0 : 180 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-5 w-5 transition-all group-hover:text-amber-400 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+                  ) : (
+                    <Moon className="h-5 w-5 transition-all group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
+                  )}
+                </motion.div>
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+              {mounted && (
+                <motion.div
+                  className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
+                  style={{
+                    background:
+                      theme === "dark"
+                        ? "radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%)",
+                  }}
+                />
+              )}
             </Button>
           </motion.div>
 
@@ -277,107 +298,112 @@ export function Navigation() {
             </Button>
           </motion.div>
 
-          {/* Quota Progress + Avatar */}
+          {/* Quota Progress + Avatar (or Login button) */}
           <div className="flex items-center gap-3 pl-2">
-            {/* Quota Indicator */}
-            <div className="hidden md:block">
-              <div className="group relative">
-                <div className="mb-1 h-1.5 w-20 overflow-hidden rounded-full bg-surface-elevated shadow-inner">
-                  <motion.div
-                    className={`h-full transition-all duration-500 ${getQuotaColor()}`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${quota.percentage}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                  />
-                </div>
-                <div className="text-xs font-medium text-text-secondary transition-colors group-hover:text-text-primary">
-                  {quota.used}/{quota.total}
-                </div>
+            {isAuthenticated && quotaData && (
+              /* Quota Indicator */
+              <div className="hidden md:block">
+                <div className="group relative">
+                  <div className="bg-surface-elevated mb-1 h-1.5 w-20 overflow-hidden rounded-full shadow-inner">
+                    <motion.div
+                      className={`h-full transition-all duration-500 ${getQuotaColor()}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(quota.percentage, 100)}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+                  <div className="text-text-secondary group-hover:text-text-primary text-xs font-medium transition-colors">
+                    {quota.used}/{quota.total}
+                  </div>
 
-                {/* Tooltip */}
-                <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-surface-elevated px-3 py-1.5 text-xs text-text-primary shadow-lg transition-transform group-hover:scale-100">
-                  剩余 {quota.total - quota.used} 次
-                  <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-surface-elevated" />
+                  {/* Tooltip */}
+                  <div className="bg-surface-elevated text-text-primary pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg px-3 py-1.5 text-xs shadow-lg transition-transform group-hover:scale-100">
+                    剩余 {quota.total - quota.used} 次
+                    <div className="bg-surface-elevated absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* User Avatar Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <motion.button
-                  className="focus:outline-none"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+            {isAuthenticated && user ? (
+              /* User Avatar Dropdown */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <motion.button
+                    className="focus:outline-none"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Avatar className="ring-border h-9 w-9 cursor-pointer ring-2 transition-all duration-300 hover:shadow-lg hover:shadow-[#7C3AED]/20 hover:ring-[#7C3AED]">
+                      <AvatarImage
+                        src={
+                          user.avatar_url ||
+                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.login}`
+                        }
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-white">
+                        {(user.name || user.login || "U").charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </motion.button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="border-border bg-surface w-56 shadow-xl"
+                  align="end"
                 >
-                  <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-border transition-all duration-300 hover:ring-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20">
-                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" />
-                    <AvatarFallback className="bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-white">
-                      U
-                    </AvatarFallback>
-                  </Avatar>
-                </motion.button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 border-border bg-surface shadow-xl"
-                align="end"
+                  <DropdownMenuLabel className="text-text-primary">
+                    <div className="flex flex-col">
+                      <span>{user.name || user.login}</span>
+                      {user.email && (
+                        <span className="text-text-secondary text-xs font-normal">
+                          {user.email}
+                        </span>
+                      )}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-border" />
+
+                  <DropdownMenuItem
+                    className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
+                    onClick={() => handleNavigate("/gallery")}
+                  >
+                    <Folder className="mr-2 h-4 w-4" />
+                    画廊
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
+                    onClick={() => handleNavigate("/templates")}
+                  >
+                    <BookTemplate className="mr-2 h-4 w-4" />
+                    模板
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
+                    onClick={() => handleNavigate("/settings")}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    设置
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuItem
+                    className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                    onClick={handleLogout}
+                  >
+                    退出登录
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              /* Login Button */
+              <Button
+                variant="ghost"
+                onClick={() => login()}
+                className="text-text-secondary hover:bg-surface-secondary hover:text-text-primary flex items-center gap-2 rounded-lg"
               >
-                <DropdownMenuLabel className="text-text-primary">
-                  <div className="flex items-center justify-between">
-                    <span>我的账户</span>
-                    {userPlan === "Pro" ? (
-                      <span className="rounded-md bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-2 py-0.5 text-xs text-white shadow-sm">
-                        Pro
-                      </span>
-                    ) : (
-                      <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-text-secondary">
-                        免费
-                      </span>
-                    )}
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-border" />
-
-                {userPlan !== "Pro" && (
-                  <>
-                    <DropdownMenuItem
-                      className="cursor-pointer text-[#F59E0B] focus:bg-[#F59E0B]/10 focus:text-[#F59E0B]"
-                      onClick={() => handleNavigate("/settings")}
-                    >
-                      <span className="mr-2">⚡</span>
-                      升级套餐
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-border" />
-                  </>
-                )}
-
-                <DropdownMenuItem
-                  className="cursor-pointer text-text-secondary focus:bg-surface-elevated focus:text-text-primary"
-                  onClick={() => handleNavigate("/gallery")}
-                >
-                  <Folder className="mr-2 h-4 w-4" />
-                  画廊
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer text-text-secondary focus:bg-surface-elevated focus:text-text-primary"
-                  onClick={() => handleNavigate("/templates")}
-                >
-                  <BookTemplate className="mr-2 h-4 w-4" />
-                  模板
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer text-text-secondary focus:bg-surface-elevated focus:text-text-primary"
-                  onClick={() => handleNavigate("/settings")}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  设置
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border" />
-                <DropdownMenuItem className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-400">
-                  退出登录
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <LogIn className="h-4 w-4" />
+                <span className="hidden sm:inline">登录</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

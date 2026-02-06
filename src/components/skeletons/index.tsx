@@ -36,7 +36,7 @@ export function AdvancedModeCardsSkeleton() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.1 }}
-          className="rounded-2xl border border-border bg-surface p-6"
+          className="border-border bg-surface rounded-2xl border p-6"
         >
           <div className="mb-4 flex items-start justify-between">
             <Skeleton className="h-12 w-12 rounded-xl" variant="default" delay={i * 0.1} />
@@ -53,7 +53,7 @@ export function AdvancedModeCardsSkeleton() {
 
 export function PreviewAreaSkeleton() {
   return (
-    <div className="flex aspect-square items-center justify-center rounded-2xl border border-dashed border-border bg-surface">
+    <div className="border-border bg-surface flex aspect-square items-center justify-center rounded-2xl border border-dashed">
       <div className="text-center">
         <Skeleton className="mx-auto mb-4 h-12 w-12 rounded-xl" />
         <Skeleton variant="text" className="mx-auto h-4 w-32" />
@@ -79,7 +79,7 @@ export function GalleryMasonrySkeleton() {
             transition={{ delay: colIndex * 0.1 + Math.floor(i / 4) * 0.05 }}
             className="mb-4 break-inside-avoid"
           >
-            <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+            <div className="border-border bg-surface overflow-hidden rounded-2xl border">
               <Skeleton
                 className="w-full"
                 style={{ height: `${height}px` }}
@@ -114,7 +114,7 @@ export function GalleryGridSkeleton() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: colIndex * 0.1 + Math.floor(i / 4) * 0.05 }}
           >
-            <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+            <div className="border-border bg-surface overflow-hidden rounded-2xl border">
               <Skeleton className="aspect-square w-full" delay={colIndex * 0.1} />
               <div className="p-4">
                 <Skeleton variant="text" className="mb-2 h-4 w-4/5" delay={colIndex * 0.1 + 0.1} />
@@ -145,7 +145,7 @@ export function DetailModalSkeleton() {
           <Skeleton variant="text" className="h-4 w-2/5" />
         </div>
 
-        <div className="h-px bg-border" />
+        <div className="bg-border h-px" />
 
         <div>
           <Skeleton variant="text" className="mb-2 h-4 w-20" />
@@ -200,7 +200,7 @@ export function ChatImageSkeleton() {
 
 export function TemplateCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+    <div className="border-border bg-surface overflow-hidden rounded-2xl border">
       <Skeleton className="aspect-video w-full" />
       <div className="p-4">
         <div className="mb-3 flex items-start justify-between">
@@ -236,11 +236,7 @@ export function BlendImagesSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
       {[...Array(count)].map((_, i) => (
-        <Skeleton
-          key={i}
-          className="aspect-square w-full rounded-xl"
-          delay={i * 0.1}
-        />
+        <Skeleton key={i} className="aspect-square w-full rounded-xl" delay={i * 0.1} />
       ))}
     </div>
   );
@@ -281,7 +277,9 @@ export function LoadingSpinner({
       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
     >
       {variant === "default" ? (
-        <div className={`${sizeClasses[size]} rounded-full border-2 border-border border-t-[#7C3AED]`} />
+        <div
+          className={`${sizeClasses[size]} border-border rounded-full border-2 border-t-[#7C3AED]`}
+        />
       ) : (
         <div
           className={`${sizeClasses[size]} rounded-full`}
@@ -298,7 +296,7 @@ export function FullPageLoading({ message = "加载中..." }: { message?: string
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center gap-4">
       <LoadingSpinner size="lg" variant="gradient" />
-      <p className="text-sm text-text-secondary">{message}</p>
+      <p className="text-text-secondary text-sm">{message}</p>
     </div>
   );
 }
