@@ -11,7 +11,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-lg shadow-[#7C3AED]/30 hover:shadow-xl hover:shadow-[#7C3AED]/40 hover:scale-[1.02] active:scale-[0.98]",
+        default:
+          "rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-lg shadow-[#7C3AED]/30 hover:shadow-xl hover:shadow-[#7C3AED]/40 hover:scale-[1.02] active:scale-[0.98]",
         destructive:
           "rounded-xl bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white shadow-lg shadow-[#EF4444]/30 hover:shadow-xl hover:shadow-[#EF4444]/40 hover:scale-[1.02] active:scale-[0.98]",
         outline:
@@ -21,7 +22,8 @@ const buttonVariants = cva(
         ghost:
           "rounded-xl text-text-secondary hover:bg-surface-secondary hover:text-text-primary active:scale-[0.98]",
         link: "text-[#7C3AED] underline-offset-4 hover:underline hover:text-[#2563EB]",
-        success: "rounded-xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-lg shadow-[#10B981]/30 hover:shadow-xl hover:shadow-[#10B981]/40 hover:scale-[1.02] active:scale-[0.98]",
+        success:
+          "rounded-xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white shadow-lg shadow-[#10B981]/30 hover:shadow-xl hover:shadow-[#10B981]/40 hover:scale-[1.02] active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-5 py-2.5",
@@ -34,7 +36,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  },
+  }
 );
 
 function Button({

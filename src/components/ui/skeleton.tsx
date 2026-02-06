@@ -17,7 +17,7 @@ export function Skeleton({
   ...props
 }: SkeletonProps) {
   const baseClasses = "bg-surface-secondary overflow-hidden relative";
-  
+
   const variantClasses = {
     default: "rounded-xl",
     circle: "rounded-full",
@@ -27,17 +27,10 @@ export function Skeleton({
   };
 
   return (
-    <div
-      className={cn(
-        baseClasses,
-        variantClasses[variant],
-        className
-      )}
-      {...props}
-    >
+    <div className={cn(baseClasses, variantClasses[variant], className)} {...props}>
       {animate && (
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-border to-transparent"
+          className="via-border absolute inset-0 bg-gradient-to-r from-transparent to-transparent"
           initial={{ x: "-100%" }}
           animate={{ x: "200%" }}
           transition={{
@@ -64,15 +57,9 @@ export function SkeletonGroup({
 }
 
 // Text skeleton with multiple lines
-export function SkeletonText({
-  lines = 3,
-  className,
-}: {
-  lines?: number;
-  className?: string;
-}) {
+export function SkeletonText({ lines = 3, className }: { lines?: number; className?: string }) {
   const widths = ["w-full", "w-4/5", "w-3/5"];
-  
+
   return (
     <div className={cn("space-y-2", className)}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -101,41 +88,15 @@ export function SkeletonAvatar({
     lg: "h-16 w-16",
   };
 
-  return (
-    <Skeleton
-      variant="circle"
-      className={cn(sizeClasses[size], className)}
-    />
-  );
+  return <Skeleton variant="circle" className={cn(sizeClasses[size], className)} />;
 }
 
 // Button skeleton
-export function SkeletonButton({
-  className,
-}: {
-  className?: string;
-}) {
-  return (
-    <Skeleton
-      variant="button"
-      className={cn("h-10 w-24", className)}
-    />
-  );
+export function SkeletonButton({ className }: { className?: string }) {
+  return <Skeleton variant="button" className={cn("h-10 w-24", className)} />;
 }
 
 // Tag skeleton
-export function SkeletonTag({
-  className,
-  delay = 0,
-}: {
-  className?: string;
-  delay?: number;
-}) {
-  return (
-    <Skeleton
-      variant="tag"
-      className={cn("h-6 w-16", className)}
-      delay={delay}
-    />
-  );
+export function SkeletonTag({ className, delay = 0 }: { className?: string; delay?: number }) {
+  return <Skeleton variant="tag" className={cn("h-6 w-16", className)} delay={delay} />;
 }

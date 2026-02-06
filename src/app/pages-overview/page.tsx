@@ -94,7 +94,7 @@ export default function PagesOverviewPage() {
                   <PageCard {...page} />
 
                   {index < imageModePaths.length - 1 && (
-                    <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-1/2 lg:block">
+                    <div className="absolute top-1/2 right-0 hidden translate-x-1/2 -translate-y-1/2 lg:block">
                       <ArrowRight className="h-5 w-5 text-[#3F3F46]" />
                     </div>
                   )}
@@ -123,7 +123,7 @@ export default function PagesOverviewPage() {
                   <PageCard {...page} />
 
                   {index < videoModePaths.length - 1 && (
-                    <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-1/2 lg:block">
+                    <div className="absolute top-1/2 right-0 hidden translate-x-1/2 -translate-y-1/2 lg:block">
                       <ArrowRight className="h-5 w-5 text-[#3F3F46]" />
                     </div>
                   )}
@@ -302,9 +302,7 @@ function PageCard({
       <div className="mb-4 flex items-start justify-between">
         <div
           className={`rounded-xl p-3 ${
-            available
-              ? "bg-gradient-to-r from-[#7C3AED] to-[#2563EB]"
-              : "bg-[#27272A]"
+            available ? "bg-gradient-to-r from-[#7C3AED] to-[#2563EB]" : "bg-[#27272A]"
           }`}
         >
           <Icon className={`h-6 w-6 ${available ? "text-white" : "text-[#71717A]"}`} />
@@ -335,9 +333,7 @@ function StateChecklistCard({
           <div key={state.name} className="flex items-center gap-3">
             <div
               className={`flex h-5 w-5 items-center justify-center rounded ${
-                state.completed
-                  ? "bg-[#10B981]"
-                  : "border border-[#3F3F46] bg-[#27272A]"
+                state.completed ? "bg-[#10B981]" : "border border-[#3F3F46] bg-[#27272A]"
               }`}
             >
               {state.completed && (

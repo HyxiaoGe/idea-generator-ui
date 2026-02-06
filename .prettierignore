@@ -1,0 +1,5 @@
+.next/
+node_modules/
+coverage/
+Aiimagevideogenerator/
+package-lock.json

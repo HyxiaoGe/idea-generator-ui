@@ -27,7 +27,11 @@ export default function DesignSystemPage() {
       { name: "Border Focus", value: "#7C3AED", usage: "聚焦边框 + ring" },
     ],
     primary: [
-      { name: "Primary Gradient", value: "linear-gradient(135deg, #7C3AED 0%, #2563EB 100%)", usage: "主按钮渐变" },
+      {
+        name: "Primary Gradient",
+        value: "linear-gradient(135deg, #7C3AED 0%, #2563EB 100%)",
+        usage: "主按钮渐变",
+      },
       { name: "Primary Solid", value: "#7C3AED", usage: "主色单色" },
     ],
     semantic: [
@@ -108,7 +112,12 @@ export default function DesignSystemPage() {
             <h3 className="mb-4 text-lg font-semibold text-[#FAFAFA]">背景色</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {colors.backgrounds.map((color) => (
-                <ColorCard key={color.name} {...color} onCopy={copyToClipboard} copied={copiedColor === color.value} />
+                <ColorCard
+                  key={color.name}
+                  {...color}
+                  onCopy={copyToClipboard}
+                  copied={copiedColor === color.value}
+                />
               ))}
             </div>
           </div>
@@ -118,7 +127,12 @@ export default function DesignSystemPage() {
             <h3 className="mb-4 text-lg font-semibold text-[#FAFAFA]">边框色</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {colors.borders.map((color) => (
-                <ColorCard key={color.name} {...color} onCopy={copyToClipboard} copied={copiedColor === color.value} />
+                <ColorCard
+                  key={color.name}
+                  {...color}
+                  onCopy={copyToClipboard}
+                  copied={copiedColor === color.value}
+                />
               ))}
             </div>
           </div>
@@ -128,7 +142,13 @@ export default function DesignSystemPage() {
             <h3 className="mb-4 text-lg font-semibold text-[#FAFAFA]">主色</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               {colors.primary.map((color) => (
-                <ColorCard key={color.name} {...color} onCopy={copyToClipboard} copied={copiedColor === color.value} isGradient={color.name.includes("Gradient")} />
+                <ColorCard
+                  key={color.name}
+                  {...color}
+                  onCopy={copyToClipboard}
+                  copied={copiedColor === color.value}
+                  isGradient={color.name.includes("Gradient")}
+                />
               ))}
             </div>
           </div>
@@ -138,7 +158,12 @@ export default function DesignSystemPage() {
             <h3 className="mb-4 text-lg font-semibold text-[#FAFAFA]">语义色</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {colors.semantic.map((color) => (
-                <ColorCard key={color.name} {...color} onCopy={copyToClipboard} copied={copiedColor === color.value} />
+                <ColorCard
+                  key={color.name}
+                  {...color}
+                  onCopy={copyToClipboard}
+                  copied={copiedColor === color.value}
+                />
               ))}
             </div>
           </div>
@@ -148,7 +173,12 @@ export default function DesignSystemPage() {
             <h3 className="mb-4 text-lg font-semibold text-[#FAFAFA]">文字色</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {colors.text.map((color) => (
-                <ColorCard key={color.name} {...color} onCopy={copyToClipboard} copied={copiedColor === color.value} />
+                <ColorCard
+                  key={color.name}
+                  {...color}
+                  onCopy={copyToClipboard}
+                  copied={copiedColor === color.value}
+                />
               ))}
             </div>
           </div>
@@ -159,10 +189,7 @@ export default function DesignSystemPage() {
           <h2 className="mb-6 text-2xl font-semibold text-[#FAFAFA]">2. 字体系统 (Typography)</h2>
           <div className="space-y-4">
             {typography.map((type) => (
-              <div
-                key={type.name}
-                className="rounded-xl border border-[#3F3F46] bg-[#18181B] p-6"
-              >
+              <div key={type.name} className="rounded-xl border border-[#3F3F46] bg-[#18181B] p-6">
                 <div className="mb-4 flex items-start justify-between">
                   <div>
                     <h4 className="text-sm font-medium text-[#A1A1AA]">{type.name}</h4>
@@ -191,10 +218,7 @@ export default function DesignSystemPage() {
           <p className="mb-6 text-sm text-[#A1A1AA]">基于 4px 网格系统</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {spacing.map((space) => (
-              <div
-                key={space.name}
-                className="rounded-xl border border-[#3F3F46] bg-[#18181B] p-6"
-              >
+              <div key={space.name} className="rounded-xl border border-[#3F3F46] bg-[#18181B] p-6">
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-[#FAFAFA]">{space.name}</h4>
                   <p className="text-xs text-[#71717A]">{space.value}</p>
@@ -212,7 +236,9 @@ export default function DesignSystemPage() {
 
         {/* 4. 圆角系统 */}
         <section>
-          <h2 className="mb-6 text-2xl font-semibold text-[#FAFAFA]">4. 圆角系统 (Border Radius)</h2>
+          <h2 className="mb-6 text-2xl font-semibold text-[#FAFAFA]">
+            4. 圆角系统 (Border Radius)
+          </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {borderRadius.map((radius) => (
               <div
@@ -288,12 +314,10 @@ function ColorCard({
       <div className="p-4">
         <h4 className="mb-1 text-sm font-medium text-[#FAFAFA]">{name}</h4>
         <div className="flex items-center justify-between">
-          <code className="text-xs text-[#A1A1AA]">
-            {isGradient ? "渐变" : value}
-          </code>
+          <code className="text-xs text-[#A1A1AA]">{isGradient ? "渐变" : value}</code>
           <button
             onClick={() => onCopy(value, name)}
-            className="rounded p-1 text-[#71717A] opacity-0 transition-all hover:bg-[#27272A] hover:text-[#FAFAFA] group-hover:opacity-100"
+            className="rounded p-1 text-[#71717A] opacity-0 transition-all group-hover:opacity-100 hover:bg-[#27272A] hover:text-[#FAFAFA]"
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </button>

@@ -67,15 +67,10 @@ function GeneratingState({ variant, onCancel }: GeneratingStateProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const stage =
-    progress < 30 ? "startup" : progress < 70 ? "processing" : "completing";
+  const stage = progress < 30 ? "startup" : progress < 70 ? "processing" : "completing";
 
   const stageColor =
-    stage === "startup"
-      ? "#7C3AED"
-      : stage === "processing"
-      ? "#2563EB"
-      : "#10B981";
+    stage === "startup" ? "#7C3AED" : stage === "processing" ? "#2563EB" : "#10B981";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#09090B] p-6">
@@ -100,15 +95,9 @@ function GeneratingState({ variant, onCancel }: GeneratingStateProps) {
 
         {/* Main Animation Area */}
         <div className="mb-8 flex justify-center">
-          {variant === "thinking" && (
-            <ThinkingAnimation stage={stage} isComplete={isComplete} />
-          )}
-          {variant === "visualize" && (
-            <VisualizeAnimation stage={stage} isComplete={isComplete} />
-          )}
-          {variant === "ripple" && (
-            <RippleAnimation stage={stage} isComplete={isComplete} />
-          )}
+          {variant === "thinking" && <ThinkingAnimation stage={stage} isComplete={isComplete} />}
+          {variant === "visualize" && <VisualizeAnimation stage={stage} isComplete={isComplete} />}
+          {variant === "ripple" && <RippleAnimation stage={stage} isComplete={isComplete} />}
         </div>
 
         {/* Progress Bar */}
@@ -196,13 +185,7 @@ function GeneratingState({ variant, onCancel }: GeneratingStateProps) {
   );
 }
 
-function ThinkingAnimation({
-  stage,
-  isComplete,
-}: {
-  stage: string;
-  isComplete: boolean;
-}) {
+function ThinkingAnimation({ stage, isComplete }: { stage: string; isComplete: boolean }) {
   return (
     <div className="relative flex h-32 w-32 items-center justify-center">
       <motion.div
@@ -283,9 +266,7 @@ function ThinkingAnimation({
           ease: "easeInOut",
         }}
       >
-        <Sparkles
-          className={`h-8 w-8 ${isComplete ? "text-[#10B981]" : "text-[#7C3AED]"}`}
-        />
+        <Sparkles className={`h-8 w-8 ${isComplete ? "text-[#10B981]" : "text-[#7C3AED]"}`} />
       </motion.div>
 
       {[...Array(6)].map((_, i) => (
@@ -314,13 +295,7 @@ function ThinkingAnimation({
   );
 }
 
-function VisualizeAnimation({
-  stage,
-  isComplete,
-}: {
-  stage: string;
-  isComplete: boolean;
-}) {
+function VisualizeAnimation({ stage, isComplete }: { stage: string; isComplete: boolean }) {
   return (
     <div className="relative flex h-52 w-52 items-center justify-center">
       <motion.div
@@ -406,13 +381,7 @@ function VisualizeAnimation({
   );
 }
 
-function RippleAnimation({
-  stage,
-  isComplete,
-}: {
-  stage: string;
-  isComplete: boolean;
-}) {
+function RippleAnimation({ stage, isComplete }: { stage: string; isComplete: boolean }) {
   return (
     <div className="relative flex h-52 w-52 items-center justify-center">
       {[...Array(4)].map((_, i) => (
@@ -473,14 +442,8 @@ function RippleAnimation({
                 : "0 0 8px rgba(124, 58, 237, 0.8)",
             }}
             animate={{
-              x: [
-                Math.cos(angle) * 50,
-                Math.cos(angle + Math.PI * 2) * 50,
-              ],
-              y: [
-                Math.sin(angle) * 50,
-                Math.sin(angle + Math.PI * 2) * 50,
-              ],
+              x: [Math.cos(angle) * 50, Math.cos(angle + Math.PI * 2) * 50],
+              y: [Math.sin(angle) * 50, Math.sin(angle + Math.PI * 2) * 50],
             }}
             transition={{
               duration: 3,
@@ -527,9 +490,9 @@ function ConfettiEffect() {
 
 export default function GeneratingDemoPage() {
   const router = useRouter();
-  const [currentVariant, setCurrentVariant] = useState<
-    "thinking" | "visualize" | "ripple"
-  >("thinking");
+  const [currentVariant, setCurrentVariant] = useState<"thinking" | "visualize" | "ripple">(
+    "thinking"
+  );
   const [demoKey, setDemoKey] = useState(0);
 
   const handleDemoComplete = () => {
@@ -543,13 +506,13 @@ export default function GeneratingDemoPage() {
       {/* Back Button */}
       <button
         onClick={() => router.push("/")}
-        className="fixed left-6 top-6 z-10 rounded-lg bg-[#18181B] px-4 py-2 text-sm text-[#A1A1AA] transition-colors hover:text-white"
+        className="fixed top-6 left-6 z-10 rounded-lg bg-[#18181B] px-4 py-2 text-sm text-[#A1A1AA] transition-colors hover:text-white"
       >
         ← 返回首页
       </button>
 
       {/* Variant Selector */}
-      <div className="fixed left-1/2 top-6 z-10 flex -translate-x-1/2 gap-2 rounded-xl bg-[#18181B] p-2 shadow-lg">
+      <div className="fixed top-6 left-1/2 z-10 flex -translate-x-1/2 gap-2 rounded-xl bg-[#18181B] p-2 shadow-lg">
         <button
           onClick={() => {
             setCurrentVariant("thinking");

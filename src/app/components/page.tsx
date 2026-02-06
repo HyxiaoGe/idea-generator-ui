@@ -13,7 +13,15 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Download, Heart, Share2, Sparkles, Image as ImageIcon, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  Download,
+  Heart,
+  Share2,
+  Sparkles,
+  Image as ImageIcon,
+  AlertCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
@@ -50,7 +58,9 @@ export default function ComponentsLibraryPage() {
                 </Button>
               </ComponentShowcase>
               <ComponentShowcase label="Disabled">
-                <Button className="w-full" disabled>生成图片</Button>
+                <Button className="w-full" disabled>
+                  生成图片
+                </Button>
               </ComponentShowcase>
             </div>
           </div>
@@ -60,7 +70,9 @@ export default function ComponentsLibraryPage() {
             <h3 className="mb-4 text-lg font-medium text-[#FAFAFA]">Secondary（次要按钮）</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ComponentShowcase label="Default">
-                <Button variant="secondary" className="w-full">取消</Button>
+                <Button variant="secondary" className="w-full">
+                  取消
+                </Button>
               </ComponentShowcase>
               <ComponentShowcase label="With Icon">
                 <Button variant="secondary" className="w-full">
@@ -74,7 +86,9 @@ export default function ComponentsLibraryPage() {
                 </Button>
               </ComponentShowcase>
               <ComponentShowcase label="Disabled">
-                <Button variant="secondary" className="w-full" disabled>取消</Button>
+                <Button variant="secondary" className="w-full" disabled>
+                  取消
+                </Button>
               </ComponentShowcase>
             </div>
           </div>
@@ -84,7 +98,9 @@ export default function ComponentsLibraryPage() {
             <h3 className="mb-4 text-lg font-medium text-[#FAFAFA]">Ghost（幽灵按钮）</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ComponentShowcase label="Default">
-                <Button variant="ghost" className="w-full">查看全部</Button>
+                <Button variant="ghost" className="w-full">
+                  查看全部
+                </Button>
               </ComponentShowcase>
               <ComponentShowcase label="With Icon">
                 <Button variant="ghost" className="w-full">
@@ -98,7 +114,9 @@ export default function ComponentsLibraryPage() {
                 </Button>
               </ComponentShowcase>
               <ComponentShowcase label="Disabled">
-                <Button variant="ghost" className="w-full" disabled>查看全部</Button>
+                <Button variant="ghost" className="w-full" disabled>
+                  查看全部
+                </Button>
               </ComponentShowcase>
             </div>
           </div>
@@ -108,7 +126,9 @@ export default function ComponentsLibraryPage() {
             <h3 className="mb-4 text-lg font-medium text-[#FAFAFA]">Outline（描边按钮）</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ComponentShowcase label="Default">
-                <Button variant="outline" className="w-full">重新生成</Button>
+                <Button variant="outline" className="w-full">
+                  重新生成
+                </Button>
               </ComponentShowcase>
               <ComponentShowcase label="With Icon">
                 <Button variant="outline" className="w-full">
@@ -122,7 +142,9 @@ export default function ComponentsLibraryPage() {
                 </Button>
               </ComponentShowcase>
               <ComponentShowcase label="Disabled">
-                <Button variant="outline" className="w-full" disabled>重新生成</Button>
+                <Button variant="outline" className="w-full" disabled>
+                  重新生成
+                </Button>
               </ComponentShowcase>
             </div>
           </div>
@@ -132,13 +154,17 @@ export default function ComponentsLibraryPage() {
             <h3 className="mb-4 text-lg font-medium text-[#FAFAFA]">尺寸变体</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <ComponentShowcase label="Small">
-                <Button size="sm" className="w-full">小按钮</Button>
+                <Button size="sm" className="w-full">
+                  小按钮
+                </Button>
               </ComponentShowcase>
               <ComponentShowcase label="Default">
                 <Button className="w-full">默认按钮</Button>
               </ComponentShowcase>
               <ComponentShowcase label="Large">
-                <Button size="lg" className="w-full">大按钮</Button>
+                <Button size="lg" className="w-full">
+                  大按钮
+                </Button>
               </ComponentShowcase>
             </div>
           </div>
@@ -334,7 +360,9 @@ export default function ComponentsLibraryPage() {
 
         {/* 6. 加载状态 */}
         <section>
-          <h2 className="mb-6 text-2xl font-semibold text-[#FAFAFA]">6. 加载状态 (Loading States)</h2>
+          <h2 className="mb-6 text-2xl font-semibold text-[#FAFAFA]">
+            6. 加载状态 (Loading States)
+          </h2>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <ComponentShowcase label="Spinner Small">
@@ -401,7 +429,9 @@ export default function ComponentsLibraryPage() {
                 <AlertCircle className="mb-4 h-12 w-12 text-[#EF4444]" />
                 <h4 className="mb-2 font-semibold text-[#FAFAFA]">加载失败</h4>
                 <p className="mb-4 text-sm text-[#A1A1AA]">请检查网络连接后重试</p>
-                <Button size="sm" variant="outline">重试</Button>
+                <Button size="sm" variant="outline">
+                  重试
+                </Button>
               </div>
             </ComponentShowcase>
           </div>
@@ -446,7 +476,9 @@ function ComponentShowcase({
   fullHeight?: boolean;
 }) {
   return (
-    <div className={`rounded-xl border border-[#3F3F46] bg-[#09090B] p-4 ${fullHeight ? "h-full" : ""}`}>
+    <div
+      className={`rounded-xl border border-[#3F3F46] bg-[#09090B] p-4 ${fullHeight ? "h-full" : ""}`}
+    >
       <div className="mb-3">
         <h4 className="text-sm font-medium text-[#FAFAFA]">{label}</h4>
         {description && <p className="text-xs text-[#71717A]">{description}</p>}

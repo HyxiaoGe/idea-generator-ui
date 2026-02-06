@@ -10,9 +10,11 @@ interface IconButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
 }
 
 const variantStyles = {
-  default: "bg-surface-secondary border border-border text-text-primary hover:bg-surface hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20",
+  default:
+    "bg-surface-secondary border border-border text-text-primary hover:bg-surface hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20",
   ghost: "text-text-secondary hover:bg-surface-secondary hover:text-text-primary",
-  outline: "border border-border bg-transparent text-text-primary hover:bg-surface hover:border-[#7C3AED]",
+  outline:
+    "border border-border bg-transparent text-text-primary hover:bg-surface hover:border-[#7C3AED]",
   danger: "text-[#EF4444] hover:bg-[#EF4444]/10 hover:text-[#EF4444]",
   success: "text-[#10B981] hover:bg-[#10B981]/10 hover:text-[#10B981]",
 };
@@ -33,7 +35,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         className={cn(
           "inline-flex items-center justify-center transition-all",
           "disabled:pointer-events-none disabled:opacity-50",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7C3AED]/50",
+          "focus-visible:ring-2 focus-visible:ring-[#7C3AED]/50 focus-visible:outline-none",
           variantStyles[variant],
           sizeStyles[size],
           className

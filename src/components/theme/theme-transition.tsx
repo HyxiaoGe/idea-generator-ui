@@ -70,7 +70,7 @@ export function ThemeTransitionFluid({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[9999] pointer-events-none bg-black"
+      className="pointer-events-none fixed inset-0 z-[9999] bg-black"
       style={{ opacity: 0 }}
     />
   );
