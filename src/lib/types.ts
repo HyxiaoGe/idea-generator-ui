@@ -143,38 +143,46 @@ export interface ChatHistoryResponse {
 
 // ===== Quota =====
 
-export interface ModeQuota {
-  name: string;
+export interface QuotaStatusResponse {
+  date?: string;
   used: number;
   limit: number;
   remaining: number;
-  cost: number;
-}
-
-export interface QuotaStatusResponse {
-  is_trial_mode: boolean;
-  date?: string;
-  global_used: number;
-  global_limit: number;
-  global_remaining: number;
-  modes: Record<string, ModeQuota>;
   cooldown_active: boolean;
   cooldown_remaining: number;
   resets_at?: string;
+}
+
+export interface QuotaCheckResponse {
+  can_generate: boolean;
+  reason?: string;
+  cost: number;
+  remaining_after: number;
+}
+
+export interface QuotaConfigResponse {
+  daily_limit: number;
+  cooldown_seconds: number;
+  max_batch_size: number;
 }
 
 // ===== History =====
 
 export interface HistoryItem {
   id: string;
-  type: "image" | "video";
+  filename: string;
   url?: string;
   thumbnail?: string;
+  r2_key?: string;
   prompt: string;
-  mode: GenerationMode;
+  mode: string;
   settings?: GenerationSettings;
+  duration?: number;
   created_at: string;
-  favorite: boolean;
+  text_response?: string | null;
+  thinking?: string | null;
+  session_id?: string | null;
+  favorite?: boolean;
   provider?: string;
   model?: string;
 }
