@@ -37,11 +37,13 @@ export function QuotaProvider({ children }: { children: ReactNode }) {
     try {
       const client = getApiClient();
       const result = await client.checkQuota();
-      if (!result.allowed) {
-        toast.error("配额已用尽", {
-          description: quota?.resets_at
-            ? `将于 ${new Date(quota.resets_at).toLocaleString("zh-CN")} 重置`
-            : "请稍后重试或升级套餐",
+      if (!result.can_generate) {
+        toast.error("无法生成", {
+          description:
+            result.reason ||
+            (quota?.resets_at
+              ? `将于 ${new Date(quota.resets_at).toLocaleString("zh-CN")} 重置`
+              : "请稍后重试"),
         });
         return false;
       }

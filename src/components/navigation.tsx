@@ -59,10 +59,9 @@ export function Navigation() {
   // Compute quota display from real data or fallback
   const quota = quotaData
     ? {
-        used: quotaData.global_used,
-        total: quotaData.global_limit,
-        percentage:
-          quotaData.global_limit > 0 ? (quotaData.global_used / quotaData.global_limit) * 100 : 0,
+        used: quotaData.used,
+        total: quotaData.limit,
+        percentage: quotaData.limit > 0 ? (quotaData.used / quotaData.limit) * 100 : 0,
       }
     : { used: 0, total: 0, percentage: 0 };
 
@@ -314,12 +313,6 @@ export function Navigation() {
                   </div>
                   <div className="text-text-secondary group-hover:text-text-primary text-xs font-medium transition-colors">
                     {quota.used}/{quota.total}
-                  </div>
-
-                  {/* Tooltip */}
-                  <div className="bg-surface-elevated text-text-primary pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg px-3 py-1.5 text-xs shadow-lg transition-transform group-hover:scale-100">
-                    剩余 {quota.total - quota.used} 次
-                    <div className="bg-surface-elevated absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45" />
                   </div>
                 </div>
               </div>

@@ -10,6 +10,8 @@ import type {
   SendMessageResponse,
   ChatHistoryResponse,
   QuotaStatusResponse,
+  QuotaCheckResponse,
+  QuotaConfigResponse,
   PaginatedResponse,
   HistoryItem,
   Template,
@@ -255,8 +257,12 @@ export class ApiClient {
     return this.request("GET", "/quota");
   }
 
-  async checkQuota(): Promise<{ allowed: boolean }> {
-    return this.request("POST", "/quota/check");
+  async checkQuota(count: number = 1): Promise<QuotaCheckResponse> {
+    return this.request("POST", "/quota/check", { body: { count } });
+  }
+
+  async getQuotaConfig(): Promise<QuotaConfigResponse> {
+    return this.request("GET", "/quota/config");
   }
 
   // ===== API Keys =====

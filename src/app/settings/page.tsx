@@ -11,7 +11,6 @@ import {
   X,
   Loader2,
   User,
-  Zap,
   Moon,
   Sun,
   Monitor,
@@ -55,11 +54,7 @@ export default function SettingsPage() {
   // Fetch API keys
   const { data: apiKeys, mutate: mutateApiKeys } = useSWR<APIKeyInfo[]>("/auth/api-keys");
 
-  const quotaPercentage = quota
-    ? quota.global_limit > 0
-      ? (quota.global_used / quota.global_limit) * 100
-      : 0
-    : 0;
+  const quotaPercentage = quota ? (quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0) : 0;
 
   const handleCreateApiKey = useCallback(async () => {
     if (!newKeyName.trim()) {
@@ -257,42 +252,41 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-text-secondary text-sm">总配额</span>
+                <span className="text-text-secondary text-sm">今日配额</span>
                 <span className="text-text-primary text-sm font-medium">
-                  {quota ? `${quota.global_used} / ${quota.global_limit}` : "加载中..."}
+                  {quota ? `${quota.used} / ${quota.limit}` : "加载中..."}
                 </span>
               </div>
               <Progress value={quotaPercentage} className="h-2" />
-              {quota?.resets_at && (
-                <p className="text-text-secondary mt-2 text-xs">
-                  将于 {new Date(quota.resets_at).toLocaleString("zh-CN")} 重置
-                </p>
-              )}
+              <div className="mt-2 flex items-center justify-between">
+                {quota?.resets_at && (
+                  <p className="text-text-secondary text-xs">
+                    将于 {new Date(quota.resets_at).toLocaleString("zh-CN")} 重置
+                  </p>
+                )}
+                {quota?.cooldown_active && (
+                  <p className="text-xs text-[#F59E0B]">
+                    冷却中（剩余 {quota.cooldown_remaining}秒）
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Mode breakdown */}
-            {quota?.modes && Object.keys(quota.modes).length > 0 && (
+            {quota && (
               <div className="border-border bg-surface-secondary grid gap-4 rounded-xl border p-4 md:grid-cols-3">
-                {Object.entries(quota.modes).map(([mode, modeQuota]) => (
-                  <div key={mode}>
-                    <p className="text-text-secondary text-sm">{modeQuota.name}</p>
-                    <p className="text-text-primary text-2xl font-semibold">{modeQuota.used}</p>
-                    <p className="text-text-secondary text-xs">
-                      / {modeQuota.limit} · 剩余 {modeQuota.remaining}
-                    </p>
-                  </div>
-                ))}
+                <div>
+                  <p className="text-text-secondary text-sm">已使用</p>
+                  <p className="text-text-primary text-2xl font-semibold">{quota.used}</p>
+                </div>
+                <div>
+                  <p className="text-text-secondary text-sm">剩余</p>
+                  <p className="text-2xl font-semibold text-[#10B981]">{quota.remaining}</p>
+                </div>
+                <div>
+                  <p className="text-text-secondary text-sm">每日上限</p>
+                  <p className="text-text-primary text-2xl font-semibold">{quota.limit}</p>
+                </div>
               </div>
-            )}
-
-            {quota?.is_trial_mode && (
-              <Button
-                variant="outline"
-                className="w-full rounded-xl border-[#F59E0B]/50 bg-[#F59E0B]/10 text-[#F59E0B] hover:bg-[#F59E0B]/20"
-              >
-                <Zap className="mr-2 h-4 w-4" />
-                升级套餐
-              </Button>
             )}
           </div>
         </div>
