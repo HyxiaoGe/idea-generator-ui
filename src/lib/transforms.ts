@@ -67,6 +67,30 @@ export function mapResolution(frontendRes: string): "1K" | "2K" | "4K" {
 }
 
 /**
+ * Infer content type from filename extension.
+ */
+const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "avi"]);
+
+export function inferContentType(filename: string): "image" | "video" {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  return VIDEO_EXTENSIONS.has(ext) ? "video" : "image";
+}
+
+/**
+ * Convert aspect ratio string to width/height dimensions for layout calculation.
+ */
+export function getAspectRatioDimensions(aspectRatio?: string): { width: number; height: number } {
+  const map: Record<string, { width: number; height: number }> = {
+    "1:1": { width: 1, height: 1 },
+    "16:9": { width: 16, height: 9 },
+    "9:16": { width: 9, height: 16 },
+    "4:3": { width: 4, height: 3 },
+    "3:4": { width: 3, height: 4 },
+  };
+  return map[aspectRatio || "1:1"] || { width: 1, height: 1 };
+}
+
+/**
  * Build an image URL from a GeneratedImage key or url.
  * If the image already has a full URL, return it.
  * Otherwise, construct one from the API base.

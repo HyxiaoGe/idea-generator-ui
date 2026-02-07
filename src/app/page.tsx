@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Sparkles,
@@ -15,6 +15,7 @@ import {
   Dices,
   ChevronUp,
 } from "lucide-react";
+import { ImageLightbox, type LightboxSlide } from "@/components/image-lightbox";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -42,6 +43,7 @@ import {
   formatRelativeTime,
   getModeDisplayName,
   getImageUrl,
+  inferContentType,
 } from "@/lib/transforms";
 
 const imagePrompts = [
@@ -82,6 +84,9 @@ function HomePageContent() {
   const [negativePrompt, setNegativePrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [hoveredRecentVideo, setHoveredRecentVideo] = useState<number | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [recentLightboxOpen, setRecentLightboxOpen] = useState(false);
+  const [recentLightboxIndex, setRecentLightboxIndex] = useState(0);
 
   // Video-specific state
   const [videoModel, setVideoModel] = useState("");
@@ -369,6 +374,54 @@ function HomePageContent() {
     }))
   );
 
+  const lightboxSlides: LightboxSlide[] = useMemo(
+    () => generatedImages.map((img) => ({ src: img, alt: prompt })),
+    [generatedImages, prompt]
+  );
+
+  // Filtered recent items for current contentType
+  const filteredRecent = useMemo(
+    () => recentGenerations.filter((item) => inferContentType(item.filename) === contentType),
+    [recentGenerations, contentType]
+  );
+
+  const recentLightboxSlides: LightboxSlide[] = useMemo(
+    () =>
+      filteredRecent.map((item) => {
+        const isVideo = inferContentType(item.filename) === "video";
+        const meta = [
+          item.mode && getModeDisplayName(item.mode),
+          item.provider,
+          item.model,
+          formatRelativeTime(item.created_at),
+        ]
+          .filter(Boolean)
+          .join(" · ");
+
+        if (isVideo) {
+          return {
+            type: "video" as const,
+            poster: getImageUrl(item.thumbnail || item.url),
+            width: 1920,
+            height: 1080,
+            sources: [{ src: getImageUrl(item.url), type: "video/mp4" }],
+            title: item.prompt,
+            description: meta,
+            historyItem: item,
+          };
+        }
+
+        return {
+          src: getImageUrl(item.url),
+          alt: item.prompt,
+          title: item.prompt,
+          description: meta,
+          historyItem: item,
+        };
+      }),
+    [filteredRecent]
+  );
+
   return (
     <div className="mx-auto max-w-screen-xl px-6 py-8">
       {/* Preview Section */}
@@ -463,9 +516,7 @@ function HomePageContent() {
                     <Button
                       size="sm"
                       className="bg-white/10 backdrop-blur-xl hover:bg-white/20"
-                      onClick={() => {
-                        window.open(generatedImages[selectedImageIndex], "_blank");
-                      }}
+                      onClick={() => setLightboxOpen(true)}
                     >
                       <Maximize2 className="mr-2 h-4 w-4" />
                       放大
@@ -989,65 +1040,76 @@ function HomePageContent() {
             </p>
           </div>
         ) : (
-          recentGenerations
-            .filter((item) => item.type === contentType)
-            .map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{
-                  delay: index * 0.08,
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 20,
-                }}
-                whileHover={{ scale: 1.05, y: -4 }}
-                onClick={() =>
-                  handleNavigate("/gallery", {
-                    type: item.type,
-                    id: item.id,
-                    autoplay: item.type === "video",
-                  })
+          filteredRecent.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{
+                delay: index * 0.08,
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+              }}
+              whileHover={{ scale: 1.05, y: -4 }}
+              onClick={() => {
+                setRecentLightboxIndex(index);
+                setRecentLightboxOpen(true);
+              }}
+              onMouseEnter={() => {
+                if (inferContentType(item.filename) === "video") {
+                  setHoveredRecentVideo(index);
                 }
-                onMouseEnter={() => {
-                  if (item.type === "video") {
-                    setHoveredRecentVideo(index);
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (item.type === "video") {
-                    setHoveredRecentVideo(null);
-                  }
-                }}
-                className="group relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl"
-                style={{ width: "160px", height: "160px" }}
-              >
-                <ProgressiveImage
-                  src={getImageUrl(item.thumbnail || item.url)}
-                  alt={item.prompt}
-                  aspectRatio="square"
-                  showLoader={false}
-                  loaderSize="sm"
-                />
+              }}
+              onMouseLeave={() => {
+                if (inferContentType(item.filename) === "video") {
+                  setHoveredRecentVideo(null);
+                }
+              }}
+              className="group relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl"
+              style={{ width: "160px", height: "160px" }}
+            >
+              <ProgressiveImage
+                src={getImageUrl(item.thumbnail || item.url)}
+                alt={item.prompt}
+                aspectRatio="square"
+                showLoader={false}
+                loaderSize="sm"
+              />
 
-                {item.type === "video" && hoveredRecentVideo !== index && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="rounded-full bg-black/60 p-2 backdrop-blur-sm">
-                      <Film className="h-5 w-5 text-white" />
-                    </div>
-                  </div>
-                )}
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                  <div className="absolute right-0 bottom-0 left-0 p-3">
-                    <p className="line-clamp-2 text-xs text-white">{item.prompt}</p>
+              {inferContentType(item.filename) === "video" && hoveredRecentVideo !== index && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="rounded-full bg-black/60 p-2 backdrop-blur-sm">
+                    <Film className="h-5 w-5 text-white" />
                   </div>
                 </div>
-              </motion.div>
-            ))
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute right-0 bottom-0 left-0 p-3">
+                  <p className="line-clamp-2 text-xs text-white">{item.prompt}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))
         )}
       </div>
+
+      {/* Lightbox for generated images */}
+      <ImageLightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        slides={lightboxSlides}
+        index={selectedImageIndex}
+      />
+
+      {/* Lightbox for recent generations */}
+      <ImageLightbox
+        open={recentLightboxOpen}
+        close={() => setRecentLightboxOpen(false)}
+        slides={recentLightboxSlides}
+        index={recentLightboxIndex}
+      />
     </div>
   );
 }
