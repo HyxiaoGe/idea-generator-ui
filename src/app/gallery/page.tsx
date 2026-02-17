@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,18 +19,22 @@ import { ImageLightbox, type LightboxSlide } from "@/components/image-lightbox";
 import { MasonryPhotoAlbum } from "react-photo-album";
 import "react-photo-album/masonry.css";
 import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import { useAuth } from "@/lib/auth/auth-context";
 import { RequireAuth } from "@/lib/auth/require-auth";
 import { getApiClient } from "@/lib/api-client";
-import type { HistoryItem, PaginatedResponse } from "@/lib/types";
+import type { HistoryItem, PaginatedResponse, FavoriteInfo } from "@/lib/types";
 import {
   formatRelativeTime,
   getModeDisplayName,
   getImageUrl,
   getAspectRatioDimensions,
   inferContentType,
+  favoriteInfoToHistoryItem,
 } from "@/lib/transforms";
 import { toast } from "sonner";
+
+const PAGE_SIZE = 30;
 
 interface GalleryPhoto {
   src: string;
@@ -48,32 +52,75 @@ function GalleryContent() {
   const selectedItemId = searchParams.get("id") || null;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(initialType || "all");
   const [dateFilter, setDateFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Build query params for API
-  const queryParams = new URLSearchParams();
-  queryParams.set("limit", "50");
-  if (typeFilter !== "all" && typeFilter !== "favorite") {
-    queryParams.set("type", typeFilter);
-  }
-  if (modeFilter !== "all") {
-    queryParams.set("mode", modeFilter);
-  }
+  // Debounce search input (300ms)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery]);
 
-  const { data: historyData, mutate: mutateHistory } = useSWR<PaginatedResponse<HistoryItem>>(
-    isAuthenticated ? `/history?${queryParams.toString()}` : null
+  // Build SWR key for history (infinite pagination)
+  const getHistoryKey = (
+    pageIndex: number,
+    previousPageData: PaginatedResponse<HistoryItem> | null
+  ) => {
+    if (!isAuthenticated || typeFilter === "favorite") return null;
+    if (previousPageData && !previousPageData.has_more) return null;
+
+    const params = new URLSearchParams();
+    params.set("limit", PAGE_SIZE.toString());
+    params.set("offset", (pageIndex * PAGE_SIZE).toString());
+    if (typeFilter !== "all") params.set("type", typeFilter);
+    if (modeFilter !== "all") params.set("mode", modeFilter);
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    return `/history?${params.toString()}`;
+  };
+
+  const {
+    data: historyPages,
+    mutate: mutateHistory,
+    size,
+    setSize,
+    isValidating: isLoadingMore,
+  } = useSWRInfinite<PaginatedResponse<HistoryItem>>(getHistoryKey);
+
+  // Fetch favorites with pagination
+  const { data: favoritesData, mutate: mutateFavorites } = useSWR<PaginatedResponse<FavoriteInfo>>(
+    isAuthenticated && typeFilter === "favorite" ? "/favorites?limit=100" : null
   );
 
-  // Fetch favorites separately if needed
-  const { data: favoritesData, mutate: mutateFavorites } = useSWR<HistoryItem[]>(
-    isAuthenticated && typeFilter === "favorite" ? "/favorites" : null
-  );
+  // Convert favorites to HistoryItem format
+  const favoriteItems = useMemo(() => {
+    if (!favoritesData?.items) return [];
+    return favoritesData.items.map(favoriteInfoToHistoryItem);
+  }, [favoritesData]);
 
-  const rawItems = typeFilter === "favorite" ? favoritesData || [] : historyData?.items || [];
+  // Flatten paginated history
+  const historyItems = useMemo(() => {
+    if (!historyPages) return [];
+    return historyPages.flatMap((page) => page.items);
+  }, [historyPages]);
+
+  const hasMore = useMemo(() => {
+    if (!historyPages || historyPages.length === 0) return false;
+    return historyPages[historyPages.length - 1].has_more;
+  }, [historyPages]);
+
+  const rawItems = typeFilter === "favorite" ? favoriteItems : historyItems;
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setSize(1);
+  }, [typeFilter, modeFilter, debouncedSearch, setSize]);
 
   // Update filter when initialType changes
   useEffect(() => {
@@ -87,10 +134,14 @@ function GalleryContent() {
       const api = getApiClient();
       try {
         if (item.favorite) {
-          await api.removeFavorite(item.id);
+          // Use favorite_id for removal (from favoriteInfoToHistoryItem)
+          const idToRemove = item.favorite_id || item.id;
+          await api.removeFavorite(idToRemove);
           toast.info("已取消收藏");
         } else {
-          await api.addFavorite(item.id);
+          // Use image_id or item.id for adding
+          const imageId = item.image_id || item.id;
+          await api.addFavorite(imageId);
           toast.success("已添加到收藏");
         }
         mutateHistory();
@@ -117,9 +168,8 @@ function GalleryContent() {
     [mutateHistory, mutateFavorites]
   );
 
-  // Client-side filtering for search and date
+  // Client-side filtering for date (server doesn't support date range)
   const filteredItems = rawItems.filter((item) => {
-    // Date filter
     if (dateFilter !== "all") {
       const itemDate = new Date(item.created_at);
       const now = new Date();
@@ -137,12 +187,6 @@ function GalleryContent() {
         if (itemDate < monthAgo) return false;
       }
     }
-
-    // Search filter
-    if (searchQuery && !item.prompt.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-
     return true;
   });
 
@@ -315,49 +359,72 @@ function GalleryContent() {
             </p>
           </div>
         ) : (
-          /* Masonry Grid */
-          <MasonryPhotoAlbum
-            photos={photos}
-            columns={(containerWidth) => {
-              if (containerWidth < 640) return 1;
-              if (containerWidth < 768) return 2;
-              if (containerWidth < 1024) return 3;
-              return 4;
-            }}
-            spacing={16}
-            onClick={({ index }) => {
-              setLightboxIndex(index);
-              setLightboxOpen(true);
-            }}
-            render={{
-              photo: (_props, { photo, index, width, height }) => (
-                <GalleryCard
-                  key={photo.key || index}
-                  item={(photo as GalleryPhoto).item}
-                  width={width}
-                  height={height}
-                  onClick={() => {
-                    const idx = photos.findIndex((p) => p.key === photo.key);
-                    setLightboxIndex(idx >= 0 ? idx : 0);
-                    setLightboxOpen(true);
-                  }}
-                  onFavorite={toggleFavorite}
-                  onDelete={deleteItem}
-                  onDownload={(item) => {
-                    if (item.url) {
-                      const link = document.createElement("a");
-                      link.href = getImageUrl(item.url);
-                      link.download = `generated-${item.id}.png`;
-                      link.click();
-                    }
-                  }}
-                  onReuse={(item) => {
-                    router.push(`/?prompt=${encodeURIComponent(item.prompt)}`);
-                  }}
-                />
-              ),
-            }}
-          />
+          <>
+            {/* Masonry Grid */}
+            <MasonryPhotoAlbum
+              photos={photos}
+              columns={(containerWidth) => {
+                if (containerWidth < 640) return 1;
+                if (containerWidth < 768) return 2;
+                if (containerWidth < 1024) return 3;
+                return 4;
+              }}
+              spacing={16}
+              onClick={({ index }) => {
+                setLightboxIndex(index);
+                setLightboxOpen(true);
+              }}
+              render={{
+                photo: (_props, { photo, index, width, height }) => (
+                  <GalleryCard
+                    key={photo.key || index}
+                    item={(photo as GalleryPhoto).item}
+                    width={width}
+                    height={height}
+                    onClick={() => {
+                      const idx = photos.findIndex((p) => p.key === photo.key);
+                      setLightboxIndex(idx >= 0 ? idx : 0);
+                      setLightboxOpen(true);
+                    }}
+                    onFavorite={toggleFavorite}
+                    onDelete={deleteItem}
+                    onDownload={(item) => {
+                      if (item.url) {
+                        const link = document.createElement("a");
+                        link.href = getImageUrl(item.url);
+                        link.download = `generated-${item.id}.png`;
+                        link.click();
+                      }
+                    }}
+                    onReuse={(item) => {
+                      router.push(`/?prompt=${encodeURIComponent(item.prompt)}`);
+                    }}
+                  />
+                ),
+              }}
+            />
+
+            {/* Load More */}
+            {typeFilter !== "favorite" && hasMore && (
+              <div className="mt-8 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setSize(size + 1)}
+                  disabled={isLoadingMore}
+                  className="border-border rounded-xl px-8"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      加载中...
+                    </>
+                  ) : (
+                    "加载更多"
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
         {/* Lightbox */}

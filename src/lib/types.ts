@@ -62,6 +62,9 @@ export interface GenerateImageRequest {
   prompt: string;
   settings?: Partial<GenerationSettings>;
   include_thinking?: boolean;
+  enhance_prompt?: boolean;
+  generate_negative?: boolean;
+  template_id?: string;
 }
 
 export interface GeneratedImage {
@@ -75,6 +78,8 @@ export interface GeneratedImage {
 export interface GenerateImageResponse {
   image: GeneratedImage;
   prompt: string;
+  processed_prompt?: string;
+  negative_prompt?: string;
   thinking?: string;
   text_response?: string;
   duration: number;
@@ -91,6 +96,7 @@ export interface GenerateImageResponse {
 export interface BatchGenerateRequest {
   prompts: string[];
   settings?: Partial<GenerationSettings>;
+  enhance_prompt?: boolean;
 }
 
 export interface BatchGenerateResponse {
@@ -183,6 +189,8 @@ export interface HistoryItem {
   thinking?: string | null;
   session_id?: string | null;
   favorite?: boolean;
+  favorite_id?: string;
+  image_id?: string;
   provider?: string;
   model?: string;
 }
@@ -212,4 +220,187 @@ export interface ProviderModel {
   id: string;
   name: string;
   capabilities?: string[];
+}
+
+// ===== Favorites =====
+
+export interface ImageInfo {
+  id: string;
+  filename: string;
+  prompt: string;
+  url?: string;
+  thumbnail_url?: string;
+  created_at: string;
+}
+
+export interface FavoriteInfo {
+  id: string;
+  image: ImageInfo;
+  folder_id?: string;
+  folder_name?: string;
+  note?: string;
+  created_at: string;
+}
+
+export interface AddFavoriteRequest {
+  image_id: string;
+  folder_id?: string;
+  note?: string;
+}
+
+// ===== Chat Sessions =====
+
+export interface ChatSessionInfo {
+  session_id: string;
+  aspect_ratio: string;
+  message_count: number;
+  created_at: string;
+  last_activity: string;
+}
+
+export interface ListChatsResponse {
+  sessions: ChatSessionInfo[];
+  total: number;
+}
+
+// ===== Preferences (powered by prefhub) =====
+
+export type Language = "zh-CN" | "en" | "ja";
+export type Theme = "system" | "light" | "dark";
+export type HourCycle = "auto" | "h12" | "h23";
+export type RoutingStrategy =
+  | "priority"
+  | "cost"
+  | "quality"
+  | "speed"
+  | "round_robin"
+  | "adaptive";
+
+export interface UIPreferences {
+  language: Language;
+  theme: Theme;
+  timezone: string;
+  hour_cycle: HourCycle;
+}
+
+export interface NotificationPreferences {
+  enabled: boolean;
+  task_completed: boolean;
+  task_failed: boolean;
+  sound: boolean;
+}
+
+export interface GenerationDefaults {
+  default_aspect_ratio?: string;
+  default_resolution?: string;
+  default_provider?: string;
+  routing_strategy?: RoutingStrategy;
+}
+
+export interface ProviderPreference {
+  provider: string;
+  enabled: boolean;
+  priority: number;
+  max_daily_usage?: number;
+}
+
+export interface ProviderPreferences {
+  providers: ProviderPreference[];
+  fallback_enabled: boolean;
+}
+
+export interface UserPreferences {
+  ui: UIPreferences;
+  notifications: NotificationPreferences;
+  extra: Record<string, unknown>;
+  generation: GenerationDefaults;
+  providers: ProviderPreferences;
+}
+
+export interface APISettings {
+  webhook_url?: string;
+  webhook_secret?: string;
+  max_concurrent_requests?: number;
+}
+
+export interface GetPreferencesResponse {
+  preferences: UserPreferences;
+  api_settings: APISettings;
+  updated_at?: string;
+}
+
+export interface UpdatePreferencesRequest {
+  preferences?: {
+    ui?: Partial<UIPreferences>;
+    notifications?: Partial<NotificationPreferences>;
+    generation?: Partial<GenerationDefaults>;
+    providers?: Partial<ProviderPreferences>;
+    extra?: Record<string, unknown>;
+  };
+  api_settings?: Partial<APISettings>;
+}
+
+// ===== Templates (Prompt Library) =====
+
+/** List item returned by /templates, /templates/recommended, /templates/favorites */
+export interface TemplateListItem {
+  id: string;
+  display_name_en: string;
+  display_name_zh: string;
+  preview_image_url?: string;
+  category: string;
+  tags: string[];
+  difficulty: string;
+  use_count: number;
+  like_count: number;
+  favorite_count: number;
+  source: string;
+  trending_score: number;
+  created_at: string;
+}
+
+/** Detail returned by GET /templates/{id} and POST /templates/{id}/use */
+export interface TemplateDetailResponse {
+  id: string;
+  prompt_text: string;
+  display_name_en: string;
+  display_name_zh: string;
+  description_en?: string;
+  description_zh?: string;
+  preview_image_url?: string;
+  category: string;
+  tags: string[];
+  style_keywords: string[];
+  parameters: Record<string, unknown>;
+  difficulty: string;
+  language: string;
+  source: string;
+  use_count: number;
+  like_count: number;
+  favorite_count: number;
+  trending_score: number;
+  is_active: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  is_liked: boolean;
+  is_favorited: boolean;
+}
+
+/** Paginated list from /templates */
+export interface TemplateListResponse {
+  items: TemplateListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface TemplateCategoryInfo {
+  category: string;
+  count: number;
+}
+
+export interface ToggleResponse {
+  action: "added" | "removed";
+  count: number;
 }

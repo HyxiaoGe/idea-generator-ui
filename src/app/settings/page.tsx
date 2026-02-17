@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   LogOut,
   Key,
   TrendingUp,
   Settings as SettingsIcon,
-  Check,
-  X,
   Loader2,
   User,
   Moon,
   Sun,
-  Monitor,
+  Bell,
+  Volume2,
   BookOpen,
   Layout,
   Layers,
@@ -39,8 +38,14 @@ import { useTheme } from "@/components/theme/theme-provider";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuota } from "@/lib/quota/quota-context";
 import { RequireAuth } from "@/lib/auth/require-auth";
-import { getApiClient } from "@/lib/api-client";
-import type { APIKeyInfo } from "@/lib/types";
+import { getApiClient, ApiError } from "@/lib/api-client";
+import type {
+  APIKeyInfo,
+  GetPreferencesResponse,
+  UpdatePreferencesRequest,
+  Language,
+  Resolution,
+} from "@/lib/types";
 import useSWR from "swr";
 
 export default function SettingsPage() {
@@ -51,8 +56,44 @@ export default function SettingsPage() {
   const [newKeyName, setNewKeyName] = useState("");
   const [isCreatingKey, setIsCreatingKey] = useState(false);
 
+  // Settings state
+  const [resolution, setResolution] = useState("1024");
+  const [language, setLanguage] = useState<Language>("zh-CN");
+  const [enableNotifications, setEnableNotifications] = useState(true);
+  const [enableSound, setEnableSound] = useState(true);
+
   // Fetch API keys
   const { data: apiKeys, mutate: mutateApiKeys } = useSWR<APIKeyInfo[]>("/auth/api-keys");
+
+  // Fetch preferences from API
+  const { data: prefsData } = useSWR<GetPreferencesResponse>("/preferences");
+
+  // Populate controlled state from API data
+  useEffect(() => {
+    if (prefsData) {
+      const { ui, notifications, generation } = prefsData.preferences;
+      if (generation.default_resolution) {
+        const resMap: Record<string, string> = { "1K": "1024", "2K": "2048", "4K": "4096" };
+        setResolution(resMap[generation.default_resolution] || "1024");
+      }
+      if (ui.language) setLanguage(ui.language);
+      setEnableNotifications(notifications.enabled ?? true);
+      setEnableSound(notifications.sound ?? false);
+    }
+  }, [prefsData]);
+
+  const savePreference = useCallback(async (update: UpdatePreferencesRequest["preferences"]) => {
+    try {
+      const api = getApiClient();
+      await api.updatePreferences({ preferences: update });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        toast.error("偏好服务暂不可用", { description: "后端尚未启用此功能" });
+      } else {
+        toast.error("保存设置失败");
+      }
+    }
+  }, []);
 
   const quotaPercentage = quota ? (quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0) : 0;
 
@@ -108,6 +149,32 @@ export default function SettingsPage() {
     toast.success(checked ? "已切换到深色模式" : "已切换到浅色模式", {
       duration: 2000,
     });
+  };
+
+  const handleResolutionChange = (value: string) => {
+    setResolution(value);
+    const resMap: Record<string, Resolution> = {
+      "512": "1K",
+      "1024": "1K",
+      "2048": "2K",
+      "4096": "4K",
+    };
+    savePreference({ generation: { default_resolution: resMap[value] || "1K" } });
+  };
+
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value as Language);
+    savePreference({ ui: { language: value as Language } });
+  };
+
+  const handleNotificationsChange = (checked: boolean) => {
+    setEnableNotifications(checked);
+    savePreference({ notifications: { enabled: checked } });
+  };
+
+  const handleSoundChange = (checked: boolean) => {
+    setEnableSound(checked);
+    savePreference({ notifications: { sound: checked } });
   };
 
   return (
@@ -303,7 +370,7 @@ export default function SettingsPage() {
               <Label htmlFor="default-resolution" className="text-text-secondary mb-2">
                 默认分辨率
               </Label>
-              <Select defaultValue="1024">
+              <Select value={resolution} onValueChange={handleResolutionChange}>
                 <SelectTrigger
                   id="default-resolution"
                   className="border-border bg-surface-secondary rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
@@ -322,7 +389,7 @@ export default function SettingsPage() {
               <Label htmlFor="language" className="text-text-secondary mb-2">
                 语言
               </Label>
-              <Select defaultValue="zh-CN">
+              <Select value={language} onValueChange={handleLanguageChange}>
                 <SelectTrigger
                   id="language"
                   className="border-border bg-surface-secondary rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
@@ -331,9 +398,9 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="zh-CN">简体中文</SelectItem>
+
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="ja">日本語</SelectItem>
-                  <SelectItem value="ko">한국어</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -359,13 +426,32 @@ export default function SettingsPage() {
 
             <div className="border-border bg-surface-secondary flex items-center justify-between rounded-xl border p-4">
               <div className="flex items-center gap-3">
-                <Monitor className="text-text-secondary h-5 w-5" />
+                <Bell className="text-text-secondary h-5 w-5" />
                 <div>
-                  <p className="text-text-primary font-medium">自动保存生成结果</p>
-                  <p className="text-text-secondary text-xs">自动保存所有生成的内容</p>
+                  <p className="text-text-primary font-medium">通知提醒</p>
+                  <p className="text-text-secondary text-xs">生成完成时发送通知</p>
                 </div>
               </div>
-              <Switch defaultChecked className="data-[state=checked]:bg-[#7C3AED]" />
+              <Switch
+                checked={enableNotifications}
+                onCheckedChange={handleNotificationsChange}
+                className="data-[state=checked]:bg-[#7C3AED]"
+              />
+            </div>
+
+            <div className="border-border bg-surface-secondary flex items-center justify-between rounded-xl border p-4">
+              <div className="flex items-center gap-3">
+                <Volume2 className="text-text-secondary h-5 w-5" />
+                <div>
+                  <p className="text-text-primary font-medium">声音提示</p>
+                  <p className="text-text-secondary text-xs">操作完成时播放提示音</p>
+                </div>
+              </div>
+              <Switch
+                checked={enableSound}
+                onCheckedChange={handleSoundChange}
+                className="data-[state=checked]:bg-[#7C3AED]"
+              />
             </div>
           </div>
         </div>
@@ -428,7 +514,7 @@ export default function SettingsPage() {
         {/* Footer */}
         <div className="text-text-secondary text-center text-sm">
           <p>AI 创作工坊 v1.0.0</p>
-          <p className="mt-1">© 2026 保留所有权利</p>
+          <p className="mt-1">&copy; 2026 保留所有权利</p>
         </div>
       </div>
     </RequireAuth>

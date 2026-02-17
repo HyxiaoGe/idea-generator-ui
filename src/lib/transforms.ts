@@ -90,6 +90,61 @@ export function getAspectRatioDimensions(aspectRatio?: string): { width: number;
   return map[aspectRatio || "1:1"] || { width: 1, height: 1 };
 }
 
+import type { FavoriteInfo, HistoryItem, Language, Template, TemplateListItem } from "./types";
+
+/**
+ * Pick the correct display name based on UI language.
+ * Falls back to zh if the en field is empty.
+ */
+export function getTemplateDisplayName(
+  template: { display_name_en: string; display_name_zh: string },
+  language?: Language | string
+): string {
+  if (language === "en") {
+    return template.display_name_en || template.display_name_zh;
+  }
+  return template.display_name_zh || template.display_name_en;
+}
+
+/**
+ * Convert a FavoriteInfo (from /favorites API) to a HistoryItem for unified gallery rendering.
+ */
+export function favoriteInfoToHistoryItem(fav: FavoriteInfo): HistoryItem {
+  return {
+    id: fav.image.id,
+    filename: fav.image.filename,
+    url: fav.image.url || fav.image.thumbnail_url,
+    thumbnail: fav.image.thumbnail_url,
+    prompt: fav.image.prompt,
+    mode: "basic",
+    created_at: fav.image.created_at,
+    favorite: true,
+    favorite_id: fav.id,
+    image_id: fav.image.id,
+  };
+}
+
+/**
+ * Convert a legacy Template (fallback) to a TemplateListItem for unified template rendering.
+ */
+export function templateToListItem(t: Template): TemplateListItem {
+  return {
+    id: t.id,
+    display_name_en: t.title,
+    display_name_zh: t.title,
+    preview_image_url: t.image,
+    category: t.category,
+    tags: [],
+    difficulty: "beginner",
+    use_count: t.uses,
+    like_count: 0,
+    favorite_count: 0,
+    source: "curated",
+    trending_score: t.trending ? 100 : 0,
+    created_at: new Date().toISOString(),
+  };
+}
+
 /**
  * Build an image URL from a GeneratedImage key or url.
  * If the image already has a full URL, return it.

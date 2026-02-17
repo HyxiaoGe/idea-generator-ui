@@ -36,7 +36,14 @@ import useSWR from "swr";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuota } from "@/lib/quota/quota-context";
 import { getApiClient } from "@/lib/api-client";
-import type { HistoryItem, ProviderInfo, GenerateImageResponse, AspectRatio } from "@/lib/types";
+import type {
+  HistoryItem,
+  ProviderInfo,
+  GenerateImageResponse,
+  AspectRatio,
+  TemplateListItem,
+  GetPreferencesResponse,
+} from "@/lib/types";
 import {
   getProviderAndModel,
   mapResolution,
@@ -44,21 +51,19 @@ import {
   getModeDisplayName,
   getImageUrl,
   inferContentType,
+  getTemplateDisplayName,
 } from "@/lib/transforms";
 
-const imagePrompts = [
-  { emoji: "🐱", text: "一只橘猫坐在窗台上，赛博朋克风格" },
-  { emoji: "🏙️", text: "未来科技感的悬浮城市，云层之上" },
-  { emoji: "🏡", text: "森林中的小木屋，清晨薄雾" },
-  { emoji: "🌌", text: "抽象艺术风格的星空，梵高笔触" },
-];
-
-const videoPrompts = [
-  { emoji: "🌊", text: "海浪拍打沙滩，夕阳西下，慢镜头" },
-  { emoji: "🚗", text: "城市街道穿梭，霓虹灯闪烁，第一人称视角" },
-  { emoji: "🌸", text: "樱花飘落，微风吹拂，唯美氛围" },
-  { emoji: "🔥", text: "篝火燃烧特写，火焰跳动，温馨场景" },
-];
+const CATEGORY_EMOJIS: Record<string, string> = {
+  abstract: "🎨",
+  portrait: "👤",
+  landscape: "🌄",
+  animal: "🐾",
+  food: "🍜",
+  architecture: "🏛️",
+  scifi: "🚀",
+  fantasy: "✨",
+};
 
 function HomePageContent() {
   const router = useRouter();
@@ -82,6 +87,7 @@ function HomePageContent() {
   const [resolution, setResolution] = useState("1k");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [negativePrompt, setNegativePrompt] = useState("");
+  const [enhancePrompt, setEnhancePrompt] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hoveredRecentVideo, setHoveredRecentVideo] = useState<number | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -122,6 +128,26 @@ function HomePageContent() {
       setVideoModel(`${first.name}:${first.models[0].id}`);
     }
   }, [videoProviders, videoModel]);
+
+  // Fetch recommended templates for example prompts
+  const { data: recommendedData } = useSWR<TemplateListItem[]>(
+    isAuthenticated ? "/templates/recommended" : null
+  );
+
+  // Get language from user settings (cached by SWR)
+  const { data: prefsData } = useSWR<GetPreferencesResponse>(
+    isAuthenticated ? "/preferences" : null
+  );
+  const lang = prefsData?.preferences?.ui?.language;
+
+  const examplePrompts = useMemo(() => {
+    if (!recommendedData || recommendedData.length === 0) return [];
+    return recommendedData.slice(0, 4).map((t) => ({
+      id: t.id,
+      emoji: CATEGORY_EMOJIS[t.category] || "✨",
+      text: getTemplateDisplayName(t, lang),
+    }));
+  }, [recommendedData, lang]);
 
   // Fetch recent generations from API
   const { data: historyData, isLoading: isLoadingRecent } = useSWR<{
@@ -250,6 +276,7 @@ function HomePageContent() {
               resolution: mapResolution(resolution),
               safety_level: "moderate",
             },
+            enhance_prompt: enhancePrompt || undefined,
           },
           provider,
           modelName
@@ -274,6 +301,7 @@ function HomePageContent() {
               setSelectedImageIndex(0);
               setState("result");
               setIsGenerating(false);
+              setEnhancePrompt(false);
               refreshQuota();
               toast.success("生成完成！");
             } else if (taskProgress.status === "failed") {
@@ -307,6 +335,7 @@ function HomePageContent() {
               resolution: mapResolution(resolution),
               safety_level: "moderate",
             },
+            enhance_prompt: enhancePrompt || undefined,
           },
           provider,
           modelName
@@ -318,8 +347,15 @@ function HomePageContent() {
         setSelectedImageIndex(0);
         setState("result");
         setIsGenerating(false);
+        setEnhancePrompt(false);
         refreshQuota();
-        toast.success("生成完成！");
+        if (result.processed_prompt) {
+          toast.success("生成完成！", {
+            description: `优化后的提示词: ${result.processed_prompt.slice(0, 80)}...`,
+          });
+        } else {
+          toast.success("生成完成！");
+        }
       }
     } catch (error) {
       setState("empty");
@@ -337,6 +373,7 @@ function HomePageContent() {
     videoModel,
     count,
     searchGrounding,
+    enhancePrompt,
     aspectRatio,
     resolution,
     videoAspectRatio,
@@ -346,16 +383,28 @@ function HomePageContent() {
   ]);
 
   const handleOptimizePrompt = () => {
-    toast.success("提示词已优化");
-    setPrompt(prompt + "，高质量，超细节，专业摄影");
+    setEnhancePrompt((prev) => {
+      const next = !prev;
+      toast.success(next ? "AI优化已开启" : "AI优化已关闭");
+      return next;
+    });
   };
 
   const generateRandomSeed = () => {
     setSeed(Math.floor(Math.random() * 1000000).toString());
   };
 
-  const handleExampleClick = (text: string) => {
-    setPrompt(text);
+  const handleExampleClick = async (templateId: string, displayName: string) => {
+    // Set display name immediately for responsiveness
+    setPrompt(displayName);
+    // Fetch the actual prompt_text from template detail
+    try {
+      const api = getApiClient();
+      const detail = await api.getTemplate(templateId);
+      setPrompt(detail.prompt_text);
+    } catch {
+      // Keep display name as fallback
+    }
     toast.info("已填入示例提示词");
   };
 
@@ -441,19 +490,21 @@ function HomePageContent() {
                 </div>
                 <p className="text-text-secondary mb-6 text-center text-sm">生成结果将在此显示</p>
 
-                <div className="grid max-w-2xl grid-cols-1 gap-3 md:grid-cols-2">
-                  {(contentType === "image" ? imagePrompts : videoPrompts).map((example, index) => (
-                    <motion.button
-                      key={index}
-                      whileHover={{ scale: 1.02 }}
-                      onClick={() => handleExampleClick(example.text)}
-                      className="group border-border bg-surface-elevated text-text-primary hover:bg-surface flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm transition-all hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20"
-                    >
-                      <span className="text-xl">{example.emoji}</span>
-                      <span className="flex-1">{example.text}</span>
-                    </motion.button>
-                  ))}
-                </div>
+                {examplePrompts.length > 0 && (
+                  <div className="grid max-w-2xl grid-cols-1 gap-3 md:grid-cols-2">
+                    {examplePrompts.map((example, index) => (
+                      <motion.button
+                        key={index}
+                        whileHover={{ scale: 1.02 }}
+                        onClick={() => handleExampleClick(example.id, example.text)}
+                        className="group border-border bg-surface-elevated text-text-primary hover:bg-surface flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm transition-all hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20"
+                      >
+                        <span className="text-xl">{example.emoji}</span>
+                        <span className="flex-1">{example.text}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -581,8 +632,12 @@ function HomePageContent() {
               variant="ghost"
               onClick={handleOptimizePrompt}
               disabled={!prompt}
-              className="text-text-secondary hover:bg-surface-elevated hover:text-text-primary h-9 w-9 p-0 disabled:opacity-50"
-              title="AI优化"
+              className={`h-9 w-9 p-0 disabled:opacity-50 ${
+                enhancePrompt
+                  ? "bg-[#7C3AED]/20 text-[#7C3AED] hover:bg-[#7C3AED]/30"
+                  : "text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
+              }`}
+              title={enhancePrompt ? "AI优化已开启" : "AI优化"}
             >
               <Wand2 className="h-4 w-4" />
             </Button>

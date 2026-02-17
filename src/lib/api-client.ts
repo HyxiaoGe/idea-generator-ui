@@ -14,8 +14,17 @@ import type {
   QuotaConfigResponse,
   PaginatedResponse,
   HistoryItem,
-  Template,
   APIKeyInfo,
+  FavoriteInfo,
+  AddFavoriteRequest,
+  ListChatsResponse,
+  GetPreferencesResponse,
+  UpdatePreferencesRequest,
+  TemplateListItem,
+  TemplateListResponse,
+  TemplateDetailResponse,
+  TemplateCategoryInfo,
+  ToggleResponse,
 } from "./types";
 
 export class ApiError extends Error {
@@ -210,12 +219,14 @@ export class ApiClient {
     offset?: number;
     type?: string;
     mode?: string;
+    search?: string;
   }): Promise<PaginatedResponse<HistoryItem>> {
     const searchParams = new URLSearchParams();
     if (params?.limit) searchParams.set("limit", params.limit.toString());
     if (params?.offset) searchParams.set("offset", params.offset.toString());
     if (params?.type) searchParams.set("type", params.type);
     if (params?.mode) searchParams.set("mode", params.mode);
+    if (params?.search) searchParams.set("search", params.search);
     const query = searchParams.toString();
     return this.request("GET", `/history${query ? `?${query}` : ""}`);
   }
@@ -226,28 +237,104 @@ export class ApiClient {
 
   // ===== Favorites =====
 
-  async getFavorites(): Promise<HistoryItem[]> {
-    return this.request("GET", "/favorites");
+  async getFavorites(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<PaginatedResponse<FavoriteInfo>> {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.offset) searchParams.set("offset", params.offset.toString());
+    const query = searchParams.toString();
+    return this.request("GET", `/favorites${query ? `?${query}` : ""}`);
   }
 
-  async addFavorite(historyId: string): Promise<void> {
-    return this.request("POST", "/favorites", { body: { history_id: historyId } });
+  async addFavorite(
+    imageId: string,
+    options?: { folder_id?: string; note?: string }
+  ): Promise<void> {
+    const body: AddFavoriteRequest = { image_id: imageId, ...options };
+    return this.request("POST", "/favorites", { body });
   }
 
-  async removeFavorite(historyId: string): Promise<void> {
-    return this.request("DELETE", `/favorites/${historyId}`);
+  async removeFavorite(favoriteId: string): Promise<void> {
+    return this.request("DELETE", `/favorites/${favoriteId}`);
+  }
+
+  // ===== Chat Management =====
+
+  async listChats(): Promise<ListChatsResponse> {
+    return this.request("GET", "/chat");
+  }
+
+  async deleteChat(sessionId: string): Promise<void> {
+    return this.request("DELETE", `/chat/${sessionId}`);
+  }
+
+  // ===== Preferences =====
+
+  async getPreferences(): Promise<GetPreferencesResponse> {
+    return this.request("GET", "/preferences");
+  }
+
+  async updatePreferences(req: UpdatePreferencesRequest): Promise<GetPreferencesResponse> {
+    return this.request("PUT", "/preferences", { body: req });
   }
 
   // ===== Templates =====
 
-  async getTemplates(params?: { category?: string }): Promise<Template[]> {
+  async getTemplates(params?: {
+    category?: string;
+    tags?: string;
+    difficulty?: string;
+    search?: string;
+    sort_by?: string;
+    page?: number;
+    page_size?: number;
+  }): Promise<TemplateListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.category) searchParams.set("category", params.category);
+    if (params?.tags) searchParams.set("tags", params.tags);
+    if (params?.difficulty) searchParams.set("difficulty", params.difficulty);
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.page_size) searchParams.set("page_size", params.page_size.toString());
     const query = searchParams.toString();
     return this.request("GET", `/templates${query ? `?${query}` : ""}`);
   }
 
-  async useTemplate(id: string): Promise<void> {
+  async getTemplateCategories(): Promise<TemplateCategoryInfo[]> {
+    return this.request("GET", "/templates/categories");
+  }
+
+  async getTemplateFavorites(): Promise<TemplateListItem[]> {
+    return this.request("GET", "/templates/favorites");
+  }
+
+  async getRecommendedTemplates(params?: {
+    based_on?: string;
+    limit?: number;
+  }): Promise<TemplateListItem[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.based_on) searchParams.set("based_on", params.based_on);
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    const query = searchParams.toString();
+    return this.request("GET", `/templates/recommended${query ? `?${query}` : ""}`);
+  }
+
+  async getTemplate(id: string): Promise<TemplateDetailResponse> {
+    return this.request("GET", `/templates/${id}`);
+  }
+
+  async toggleTemplateLike(id: string): Promise<ToggleResponse> {
+    return this.request("POST", `/templates/${id}/like`);
+  }
+
+  async toggleTemplateFavorite(id: string): Promise<ToggleResponse> {
+    return this.request("POST", `/templates/${id}/favorite`);
+  }
+
+  async useTemplate(id: string): Promise<TemplateDetailResponse> {
     return this.request("POST", `/templates/${id}/use`);
   }
 

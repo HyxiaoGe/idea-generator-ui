@@ -1,12 +1,40 @@
 "use client";
 
-import { SWRConfig } from "swr";
-import { ReactNode } from "react";
-import { getApiClient, ApiError } from "./api-client";
+import { SWRConfig, type Cache } from "swr";
+import { ReactNode, useCallback, useRef } from "react";
+import { ApiError } from "./api-client";
+
+const CACHE_KEY = "swr-cache";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function localStorageProvider(): Cache<any> {
+  // Hydrate from localStorage on init
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let map: Map<string, any>;
+  try {
+    const stored = localStorage.getItem(CACHE_KEY);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    map = new Map<string, any>(stored ? JSON.parse(stored) : []);
+  } catch {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    map = new Map<string, any>();
+  }
+
+  // Persist to localStorage before unload
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", () => {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(Array.from(map.entries())));
+      } catch {
+        // Storage full or unavailable — ignore
+      }
+    });
+  }
+
+  return map as Cache;
+}
 
 function swrFetcher(path: string) {
-  const client = getApiClient();
-  // Use the client's internal request method via a simple GET wrapper
   return fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api"}${path}`, {
     headers: {
       "Content-Type": "application/json",
@@ -24,14 +52,23 @@ function swrFetcher(path: string) {
 }
 
 export function SWRProvider({ children }: { children: ReactNode }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const providerRef = useRef<Cache<any> | null>(null);
+  const getProvider = useCallback(() => {
+    if (!providerRef.current) {
+      providerRef.current = localStorageProvider();
+    }
+    return providerRef.current;
+  }, []);
+
   return (
     <SWRConfig
       value={{
+        provider: getProvider,
         fetcher: swrFetcher,
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         shouldRetryOnError: (err) => {
-          // Don't retry on 401/403/404
           if (err instanceof ApiError && [401, 403, 404].includes(err.status)) {
             return false;
           }

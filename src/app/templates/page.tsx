@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Sparkles, TrendingUp, Wand2 } from "lucide-react";
+import { Heart, Sparkles, ThumbsUp, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
@@ -11,127 +11,156 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import { useAuth } from "@/lib/auth/auth-context";
 import { getApiClient } from "@/lib/api-client";
-import type { Template } from "@/lib/types";
-import { getImageUrl } from "@/lib/transforms";
-
-// Fallback templates for when not authenticated or API unavailable
-const fallbackTemplates: Template[] = [
-  {
-    id: "1",
-    title: "赛博朋克城市",
-    prompt: "未来主义的赛博朋克城市，霓虹灯光，雨夜街道，高耸的摩天大楼，飞行汽车",
-    image: "https://images.unsplash.com/photo-1761223956832-a1e341babb92?w=400",
-    category: "科幻",
-    trending: true,
-    uses: 12453,
-  },
-  {
-    id: "2",
-    title: "抽象渐变",
-    prompt: "流动的色彩，抽象渐变艺术，柔和的过渡，梦幻般的氛围",
-    image: "https://images.unsplash.com/photo-1655435439159-92d407ae9ab5?w=400",
-    category: "抽象",
-    trending: false,
-    uses: 8932,
-  },
-  {
-    id: "3",
-    title: "魔法森林",
-    prompt: "神秘的魔法森林，发光的蘑菇，仙女，薄雾弥漫，梦幻色彩",
-    image: "https://images.unsplash.com/photo-1672581437674-3186b17b405a?w=400",
-    category: "奇幻",
-    trending: true,
-    uses: 15672,
-  },
-  {
-    id: "4",
-    title: "日式庭院",
-    prompt: "传统日式庭院，枯山水，樱花盛开，木质建筑，宁静氛围",
-    image: "https://images.unsplash.com/photo-1635046252882-910febb5c729?w=400",
-    category: "建筑",
-    trending: false,
-    uses: 6234,
-  },
-  {
-    id: "5",
-    title: "太空探索",
-    prompt: "宇宙飞船，星云，遥远的行星，太空探险，科幻风格",
-    image: "https://images.unsplash.com/photo-1655892810227-c0cffe1d9717?w=400",
-    category: "科幻",
-    trending: true,
-    uses: 18234,
-  },
-  {
-    id: "6",
-    title: "水彩花卉",
-    prompt: "水彩画风格的花卉，柔和色彩，艺术插画，清新自然",
-    image: "https://images.unsplash.com/photo-1655435439159-92d407ae9ab5?w=400",
-    category: "艺术",
-    trending: false,
-    uses: 9456,
-  },
-];
+import type {
+  TemplateListItem,
+  TemplateListResponse,
+  TemplateCategoryInfo,
+  GetPreferencesResponse,
+} from "@/lib/types";
+import { getImageUrl, getTemplateDisplayName } from "@/lib/transforms";
 
 export default function TemplatesPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("全部");
   const [searchQuery, setSearchQuery] = useState("");
-  const [localFavorites, setLocalFavorites] = useState<Set<string>>(new Set());
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input (300ms)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery]);
+
+  // Build API query params
+  const templateParams = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("page_size", "50");
+    if (selectedCategory !== "全部" && selectedCategory !== "推荐" && selectedCategory !== "收藏") {
+      params.set("category", selectedCategory);
+    }
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    return params.toString();
+  }, [selectedCategory, debouncedSearch]);
 
   // Fetch templates from API
-  const { data: apiTemplates } = useSWR<Template[]>(isAuthenticated ? "/templates" : null);
+  const { data: apiTemplatesData, mutate: mutateTemplates } = useSWR<TemplateListResponse>(
+    isAuthenticated && selectedCategory !== "收藏" && selectedCategory !== "推荐"
+      ? `/templates?${templateParams}`
+      : null
+  );
 
-  const templates = apiTemplates && apiTemplates.length > 0 ? apiTemplates : fallbackTemplates;
+  // Fetch categories dynamically
+  const { data: categoriesData } = useSWR<TemplateCategoryInfo[]>(
+    isAuthenticated ? "/templates/categories" : null
+  );
 
-  // Build category list from templates
+  // Fetch favorites tab
+  const { data: favoriteTemplates, mutate: mutateFavorites } = useSWR<TemplateListItem[]>(
+    isAuthenticated && selectedCategory === "收藏" ? "/templates/favorites" : null
+  );
+
+  // Fetch recommended tab
+  const { data: recommendedTemplates } = useSWR<TemplateListItem[]>(
+    isAuthenticated && selectedCategory === "推荐" ? "/templates/recommended" : null
+  );
+
+  // Get language from user settings (cached by SWR)
+  const { data: prefsData } = useSWR<GetPreferencesResponse>(
+    isAuthenticated ? "/preferences" : null
+  );
+  const lang = prefsData?.preferences?.ui?.language;
+
+  // Determine which templates to show
+  const templates: TemplateListItem[] = useMemo(() => {
+    if (selectedCategory === "收藏") {
+      return favoriteTemplates || [];
+    }
+    if (selectedCategory === "推荐") {
+      return recommendedTemplates || [];
+    }
+    if (apiTemplatesData?.items && apiTemplatesData.items.length > 0) {
+      return apiTemplatesData.items;
+    }
+    return [];
+  }, [selectedCategory, apiTemplatesData, favoriteTemplates, recommendedTemplates]);
+
+  // Build category list from API
   const categories = useMemo(() => {
-    const cats = new Set(templates.map((t) => t.category));
-    return ["全部", "推荐", "收藏", ...Array.from(cats)];
-  }, [templates]);
+    const base = ["全部", "推荐", "收藏"];
+    if (categoriesData && categoriesData.length > 0) {
+      return [...base, ...categoriesData.map((c) => c.category)];
+    }
+    return base;
+  }, [categoriesData]);
 
-  const toggleFavorite = (id: string) => {
-    setLocalFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        toast.info("已取消收藏");
-      } else {
-        next.add(id);
-        toast.success("已添加到收藏", { description: "可在「收藏」分类中查看" });
+  // Client-side search filter (for when API search is not available)
+  const filteredTemplates = useMemo(() => {
+    if (debouncedSearch && !apiTemplatesData) {
+      return templates.filter(
+        (t) =>
+          t.display_name_zh.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          t.display_name_en.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+    }
+    return templates;
+  }, [templates, debouncedSearch, apiTemplatesData]);
+
+  const handleToggleFavorite = useCallback(
+    async (template: TemplateListItem) => {
+      if (!isAuthenticated) {
+        toast.error("请先登录");
+        return;
       }
-      return next;
-    });
-  };
-
-  const handleUseTemplate = async (template: Template) => {
-    // Record template usage in backend
-    if (isAuthenticated) {
       try {
         const api = getApiClient();
-        await api.useTemplate(template.id);
+        const result = await api.toggleTemplateFavorite(template.id);
+        toast.success(result.action === "removed" ? "已取消收藏" : "已添加到收藏");
+        mutateTemplates();
+        mutateFavorites();
       } catch {
-        // Non-critical, continue navigation
+        toast.error("操作失败");
       }
-    }
+    },
+    [isAuthenticated, mutateTemplates, mutateFavorites]
+  );
 
-    const params = new URLSearchParams({ prompt: template.prompt });
-    router.push(`/?${params.toString()}`);
+  const handleToggleLike = useCallback(
+    async (template: TemplateListItem) => {
+      if (!isAuthenticated) {
+        toast.error("请先登录");
+        return;
+      }
+      try {
+        const api = getApiClient();
+        await api.toggleTemplateLike(template.id);
+        mutateTemplates();
+      } catch {
+        toast.error("操作失败");
+      }
+    },
+    [isAuthenticated, mutateTemplates]
+  );
+
+  const handleUseTemplate = async (template: TemplateListItem) => {
+    try {
+      const api = getApiClient();
+      // Fetch detail to get prompt_text, also records usage
+      const detail = await api.useTemplate(template.id);
+      const params = new URLSearchParams({ prompt: detail.prompt_text });
+      router.push(`/?${params.toString()}`);
+    } catch {
+      // Fallback: navigate with display name as prompt
+      const params = new URLSearchParams({ prompt: template.display_name_zh });
+      router.push(`/?${params.toString()}`);
+    }
   };
 
-  const filteredTemplates = templates.filter((t) => {
-    if (selectedCategory === "推荐") return t.trending;
-    if (selectedCategory === "收藏") return localFavorites.has(t.id);
-    if (selectedCategory !== "全部" && t.category !== selectedCategory) return false;
-    if (
-      searchQuery &&
-      !t.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !t.prompt.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
-  });
+  // In "收藏" tab, all items are favorited
+  const isFavoritedTab = selectedCategory === "收藏";
 
   return (
     <div className="mx-auto max-w-screen-xl px-6 py-8">
@@ -184,14 +213,14 @@ export default function TemplatesPage() {
           >
             <div className="bg-background relative aspect-video overflow-hidden">
               <img
-                src={getImageUrl(template.image)}
-                alt={template.title}
+                src={getImageUrl(template.preview_image_url)}
+                alt={getTemplateDisplayName(template, lang)}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
 
-              {template.trending && (
+              {template.use_count > 10000 && (
                 <div className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EF4444] px-2 py-1 backdrop-blur-sm">
-                  <TrendingUp className="h-3 w-3 text-white" />
+                  <Sparkles className="h-3 w-3 text-white" />
                   <span className="text-xs font-medium text-white">热门</span>
                 </div>
               )}
@@ -199,13 +228,13 @@ export default function TemplatesPage() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleFavorite(template.id);
+                  handleToggleFavorite(template);
                 }}
                 className="absolute top-3 right-3 rounded-lg bg-black/40 p-2 backdrop-blur-sm transition-all hover:bg-black/60 active:scale-90"
               >
                 <Heart
                   className={`h-4 w-4 transition-all duration-300 ${
-                    localFavorites.has(template.id) ? "fill-red-500 text-red-500" : "text-white"
+                    isFavoritedTab ? "fill-red-500 text-red-500" : "text-white"
                   }`}
                 />
               </button>
@@ -225,14 +254,30 @@ export default function TemplatesPage() {
 
             <div className="p-4">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-text-primary font-semibold">{template.title}</h3>
+                <h3 className="text-text-primary font-semibold">
+                  {getTemplateDisplayName(template, lang)}
+                </h3>
                 <span className="bg-surface-secondary text-text-secondary rounded-md px-2 py-0.5 text-xs">
                   {template.category}
                 </span>
               </div>
-              <p className="text-text-secondary mb-3 line-clamp-2 text-sm">{template.prompt}</p>
+              <p className="text-text-secondary mb-3 line-clamp-2 text-sm">
+                {lang === "en" ? template.display_name_zh : template.display_name_en}
+              </p>
               <div className="text-text-secondary flex items-center justify-between text-xs">
-                <span>{template.uses.toLocaleString()} 次使用</span>
+                <div className="flex items-center gap-3">
+                  <span>{template.use_count.toLocaleString()} 次使用</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleLike(template);
+                    }}
+                    className="hover:text-text-primary flex items-center gap-1 transition-colors"
+                  >
+                    <ThumbsUp className="h-3 w-3" />
+                    <span>{template.like_count}</span>
+                  </button>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
