@@ -123,8 +123,8 @@ src/
 Copy `.env.example` to `.env.local`:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api   # Backend API base
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/api/ws        # WebSocket endpoint
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8888/api   # Backend API base
+NEXT_PUBLIC_WS_URL=ws://localhost:8888/api/ws        # WebSocket endpoint
 NEXT_PUBLIC_GITHUB_CLIENT_ID=<github-client-id>      # GitHub OAuth app
 ```
 

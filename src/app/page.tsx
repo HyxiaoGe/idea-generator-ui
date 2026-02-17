@@ -52,7 +52,21 @@ import {
   getImageUrl,
   inferContentType,
   getTemplateDisplayName,
+  getTemplateDescription,
 } from "@/lib/transforms";
+
+interface GeneratedImageInfo {
+  url: string;
+  provider?: string;
+  model?: string;
+  duration?: number;
+  mode?: string;
+  settings?: { aspect_ratio: string; resolution: string };
+  processed_prompt?: string;
+  width?: number;
+  height?: number;
+  created_at?: string;
+}
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   abstract: "🎨",
@@ -77,7 +91,7 @@ function HomePageContent() {
   const [prompt, setPrompt] = useState(templatePrompt);
   const [state, setState] = useState<"empty" | "generating" | "result">("empty");
   const [progress, setProgress] = useState(0);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImageInfo[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [searchGrounding, setSearchGrounding] = useState(false);
@@ -89,6 +103,7 @@ function HomePageContent() {
   const [negativePrompt, setNegativePrompt] = useState("");
   const [enhancePrompt, setEnhancePrompt] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [hoveredRecentVideo, setHoveredRecentVideo] = useState<number | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [recentLightboxOpen, setRecentLightboxOpen] = useState(false);
@@ -131,7 +146,7 @@ function HomePageContent() {
 
   // Fetch recommended templates for example prompts
   const { data: recommendedData } = useSWR<TemplateListItem[]>(
-    isAuthenticated ? "/templates/recommended" : null
+    isAuthenticated ? "/templates/recommended?limit=40" : null
   );
 
   // Get language from user settings (cached by SWR)
@@ -140,17 +155,40 @@ function HomePageContent() {
   );
   const lang = prefsData?.preferences?.ui?.language;
 
-  const examplePrompts = useMemo(() => {
+  const allExamplePrompts = useMemo(() => {
     if (!recommendedData || recommendedData.length === 0) return [];
-    return recommendedData.slice(0, 4).map((t) => ({
+    return recommendedData.map((t) => ({
       id: t.id,
       emoji: CATEGORY_EMOJIS[t.category] || "✨",
-      text: getTemplateDisplayName(t, lang),
+      text: getTemplateDescription(t, lang),
     }));
   }, [recommendedData, lang]);
 
+  const [promptPage, setPromptPage] = useState(0);
+  const [promptPaused, setPromptPaused] = useState(false);
+  const pageSize = 4;
+  const totalPages = Math.max(1, Math.ceil(allExamplePrompts.length / pageSize));
+
+  // Auto-rotate example prompts every 5 seconds, pause on hover
+  useEffect(() => {
+    if (allExamplePrompts.length <= pageSize || promptPaused) return;
+    const timer = setInterval(() => {
+      setPromptPage((prev) => (prev + 1) % totalPages);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [allExamplePrompts.length, totalPages, promptPaused]);
+
+  const examplePrompts = useMemo(() => {
+    const start = promptPage * pageSize;
+    return allExamplePrompts.slice(start, start + pageSize);
+  }, [allExamplePrompts, promptPage]);
+
   // Fetch recent generations from API
-  const { data: historyData, isLoading: isLoadingRecent } = useSWR<{
+  const {
+    data: historyData,
+    isLoading: isLoadingRecent,
+    mutate: refreshHistory,
+  } = useSWR<{
     items: HistoryItem[];
   }>(isAuthenticated ? `/history?limit=6` : null);
 
@@ -162,6 +200,7 @@ function HomePageContent() {
     setGeneratedImages([]);
     setSelectedImageIndex(0);
     setPrompt("");
+    setSelectedTemplateId(null);
   }, [contentType]);
 
   useEffect(() => {
@@ -215,6 +254,7 @@ function HomePageContent() {
         const result = await api.generateVideo(
           {
             prompt,
+            template_id: selectedTemplateId || undefined,
             settings: {
               aspect_ratio: videoAspectRatio,
               resolution: mapResolution(videoResolution),
@@ -237,13 +277,16 @@ function HomePageContent() {
 
             if (taskProgress.status === "completed") {
               clearInterval(pollInterval);
-              const urls = taskProgress.results
+              const imgs = taskProgress.results
                 .map((r) => getImageUrl(r.url || r.key))
-                .filter(Boolean);
-              setGeneratedImages(urls.length > 0 ? urls : []);
+                .filter(Boolean)
+                .map((url) => ({ url }));
+              setGeneratedImages(imgs.length > 0 ? imgs : []);
               setState("result");
               setIsGenerating(false);
+              setSelectedTemplateId(null);
               refreshQuota();
+              refreshHistory();
               toast.success("视频生成完成！");
             } else if (taskProgress.status === "failed") {
               clearInterval(pollInterval);
@@ -271,6 +314,7 @@ function HomePageContent() {
         const result = await api.batchGenerate(
           {
             prompts,
+            template_id: selectedTemplateId || undefined,
             settings: {
               aspect_ratio: aspectRatio,
               resolution: mapResolution(resolution),
@@ -294,15 +338,18 @@ function HomePageContent() {
 
             if (taskProgress.status === "completed") {
               clearInterval(pollInterval);
-              const urls = taskProgress.results
+              const imgs = taskProgress.results
                 .map((r) => getImageUrl(r.url || r.key))
-                .filter(Boolean);
-              setGeneratedImages(urls);
+                .filter(Boolean)
+                .map((url) => ({ url }));
+              setGeneratedImages(imgs);
               setSelectedImageIndex(0);
               setState("result");
               setIsGenerating(false);
               setEnhancePrompt(false);
+              setSelectedTemplateId(null);
               refreshQuota();
+              refreshHistory();
               toast.success("生成完成！");
             } else if (taskProgress.status === "failed") {
               clearInterval(pollInterval);
@@ -330,6 +377,7 @@ function HomePageContent() {
         const result: GenerateImageResponse = await generateFn(
           {
             prompt,
+            template_id: selectedTemplateId || undefined,
             settings: {
               aspect_ratio: aspectRatio,
               resolution: mapResolution(resolution),
@@ -343,12 +391,32 @@ function HomePageContent() {
 
         setProgress(100);
         const imageUrl = getImageUrl(result.image.url || result.image.key);
-        setGeneratedImages([imageUrl]);
+        setGeneratedImages([
+          {
+            url: imageUrl,
+            provider: result.provider,
+            model: result.model,
+            duration: result.duration,
+            mode: result.mode,
+            settings: result.settings
+              ? {
+                  aspect_ratio: result.settings.aspect_ratio,
+                  resolution: result.settings.resolution,
+                }
+              : undefined,
+            processed_prompt: result.processed_prompt,
+            width: result.image.width,
+            height: result.image.height,
+            created_at: result.created_at,
+          },
+        ]);
         setSelectedImageIndex(0);
         setState("result");
         setIsGenerating(false);
         setEnhancePrompt(false);
+        setSelectedTemplateId(null);
         refreshQuota();
+        refreshHistory();
         if (result.processed_prompt) {
           toast.success("生成完成！", {
             description: `优化后的提示词: ${result.processed_prompt.slice(0, 80)}...`,
@@ -378,6 +446,7 @@ function HomePageContent() {
     resolution,
     videoAspectRatio,
     videoResolution,
+    selectedTemplateId,
     refreshQuota,
     router,
   ]);
@@ -394,18 +463,10 @@ function HomePageContent() {
     setSeed(Math.floor(Math.random() * 1000000).toString());
   };
 
-  const handleExampleClick = async (templateId: string, displayName: string) => {
-    // Set display name immediately for responsiveness
+  const handleExampleClick = (templateId: string, displayName: string) => {
     setPrompt(displayName);
-    // Fetch the actual prompt_text from template detail
-    try {
-      const api = getApiClient();
-      const detail = await api.getTemplate(templateId);
-      setPrompt(detail.prompt_text);
-    } catch {
-      // Keep display name as fallback
-    }
-    toast.info("已填入示例提示词");
+    setSelectedTemplateId(templateId);
+    toast.info("已选择模板");
   };
 
   // Build model options from providers
@@ -424,7 +485,24 @@ function HomePageContent() {
   );
 
   const lightboxSlides: LightboxSlide[] = useMemo(
-    () => generatedImages.map((img) => ({ src: img, alt: prompt })),
+    () =>
+      generatedImages.map((img) => {
+        const meta = [
+          img.provider && img.model ? `${img.provider} · ${img.model}` : img.provider || img.model,
+          img.duration ? `${img.duration.toFixed(1)}s` : null,
+          img.width && img.height ? `${img.width}×${img.height}` : null,
+          img.settings?.aspect_ratio,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+
+        return {
+          src: img.url,
+          alt: prompt,
+          title: prompt,
+          description: meta || undefined,
+        };
+      }),
     [generatedImages, prompt]
   );
 
@@ -490,19 +568,53 @@ function HomePageContent() {
                 </div>
                 <p className="text-text-secondary mb-6 text-center text-sm">生成结果将在此显示</p>
 
-                {examplePrompts.length > 0 && (
-                  <div className="grid max-w-2xl grid-cols-1 gap-3 md:grid-cols-2">
-                    {examplePrompts.map((example, index) => (
-                      <motion.button
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        onClick={() => handleExampleClick(example.id, example.text)}
-                        className="group border-border bg-surface-elevated text-text-primary hover:bg-surface flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm transition-all hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20"
+                {allExamplePrompts.length > 0 && (
+                  <div
+                    className="flex flex-col items-center gap-3"
+                    onMouseEnter={() => setPromptPaused(true)}
+                    onMouseLeave={() => setPromptPaused(false)}
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={promptPage}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        transition={{ duration: 0.3 }}
+                        className="grid max-w-2xl grid-cols-1 gap-3 md:grid-cols-2"
                       >
-                        <span className="text-xl">{example.emoji}</span>
-                        <span className="flex-1">{example.text}</span>
-                      </motion.button>
-                    ))}
+                        {examplePrompts.map((example) => (
+                          <motion.button
+                            key={example.id}
+                            whileHover={{ scale: 1.02 }}
+                            onClick={() => handleExampleClick(example.id, example.text)}
+                            className="group border-border bg-surface-elevated text-text-primary hover:bg-surface flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm transition-all hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20"
+                          >
+                            <span className="text-xl">{example.emoji}</span>
+                            <span className="flex-1 truncate">{example.text}</span>
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    </AnimatePresence>
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setPromptPage(i)}
+                            className="flex items-center justify-center px-0.5 py-2"
+                          >
+                            <span
+                              className={`block h-1.5 rounded-full transition-all ${
+                                i === promptPage
+                                  ? "w-4 bg-[#7C3AED]"
+                                  : "w-1.5 bg-[#3F3F46] hover:bg-[#7C3AED]/50"
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -536,7 +648,7 @@ function HomePageContent() {
                 className="group relative h-full"
               >
                 <img
-                  src={generatedImages[selectedImageIndex]}
+                  src={generatedImages[selectedImageIndex].url}
                   alt="Generated"
                   className="h-full w-full object-cover"
                 />
@@ -550,13 +662,50 @@ function HomePageContent() {
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                  {(() => {
+                    const img = generatedImages[selectedImageIndex];
+                    const hasMetadata = img.provider || img.model || img.duration || img.width;
+                    return hasMetadata ? (
+                      <div className="absolute bottom-6 left-6 flex flex-col gap-1.5">
+                        {(img.provider || img.model) && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white backdrop-blur">
+                              {[img.provider, img.model].filter(Boolean).join(" · ")}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {img.duration != null && (
+                            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white backdrop-blur">
+                              {img.duration.toFixed(1)}s
+                            </span>
+                          )}
+                          {img.width && img.height && (
+                            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white backdrop-blur">
+                              {img.width}×{img.height}
+                            </span>
+                          )}
+                          {img.settings?.aspect_ratio && (
+                            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white backdrop-blur">
+                              {img.settings.aspect_ratio}
+                            </span>
+                          )}
+                        </div>
+                        {img.processed_prompt && (
+                          <p className="max-w-sm truncate text-xs text-white/70">
+                            {img.processed_prompt}
+                          </p>
+                        )}
+                      </div>
+                    ) : null;
+                  })()}
                   <div className="absolute right-6 bottom-6 flex gap-2">
                     <Button
                       size="sm"
                       className="bg-white/10 backdrop-blur-xl hover:bg-white/20"
                       onClick={() => {
                         const link = document.createElement("a");
-                        link.href = generatedImages[selectedImageIndex];
+                        link.href = generatedImages[selectedImageIndex].url;
                         link.download = `generated-${Date.now()}.png`;
                         link.click();
                       }}
@@ -592,7 +741,7 @@ function HomePageContent() {
                   }`}
                 >
                   <img
-                    src={img}
+                    src={img.url}
                     alt={`Result ${index + 1}`}
                     className="aspect-square w-full object-cover"
                   />
@@ -606,16 +755,35 @@ function HomePageContent() {
       {/* Prompt Input Section */}
       <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
         <div className="relative">
+          {selectedTemplateId && (
+            <div className="absolute top-3 left-3 z-10">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#7C3AED]/20 px-2 py-0.5 text-xs text-[#7C3AED]">
+                模板
+                <button
+                  onClick={() => {
+                    setSelectedTemplateId(null);
+                    setPrompt("");
+                  }}
+                  className="hover:text-[#7C3AED]/70"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          )}
           <Textarea
             placeholder="描述你想要生成的画面..."
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => {
+              setPrompt(e.target.value);
+              if (selectedTemplateId) setSelectedTemplateId(null);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 handleGenerate();
               }
             }}
-            className="border-border bg-surface-elevated text-text-primary placeholder:text-text-secondary min-h-[120px] resize-none rounded-xl pr-32 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+            className={`border-border bg-surface-elevated text-text-primary placeholder:text-text-secondary min-h-[120px] resize-none rounded-xl pr-32 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 ${selectedTemplateId ? "pt-10" : ""}`}
           />
           <div className="absolute right-3 bottom-3 flex gap-2">
             <Button

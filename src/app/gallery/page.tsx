@@ -218,6 +218,9 @@ function GalleryContent() {
           item.mode && getModeDisplayName(item.mode),
           item.provider,
           item.model,
+          item.duration ? `${item.duration.toFixed(1)}s` : null,
+          item.settings?.resolution,
+          item.settings?.aspect_ratio,
           formatRelativeTime(item.created_at),
         ]
           .filter(Boolean)

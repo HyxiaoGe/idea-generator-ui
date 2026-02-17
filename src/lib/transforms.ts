@@ -107,6 +107,35 @@ export function getTemplateDisplayName(
 }
 
 /**
+ * Pick the correct template description based on UI language.
+ * Falls back to display name if description is not available.
+ */
+export function getTemplateDescription(
+  template: {
+    description_en?: string;
+    description_zh?: string;
+    display_name_en: string;
+    display_name_zh: string;
+  },
+  language?: Language | string
+): string {
+  if (language === "en") {
+    return (
+      template.description_en ||
+      template.description_zh ||
+      template.display_name_en ||
+      template.display_name_zh
+    );
+  }
+  return (
+    template.description_zh ||
+    template.description_en ||
+    template.display_name_zh ||
+    template.display_name_en
+  );
+}
+
+/**
  * Convert a FavoriteInfo (from /favorites API) to a HistoryItem for unified gallery rendering.
  */
 export function favoriteInfoToHistoryItem(fav: FavoriteInfo): HistoryItem {
@@ -155,6 +184,6 @@ export function getImageUrl(urlOrKey: string | undefined): string {
   if (urlOrKey.startsWith("http://") || urlOrKey.startsWith("https://")) {
     return urlOrKey;
   }
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api";
   return `${base}/files/${urlOrKey}`;
 }

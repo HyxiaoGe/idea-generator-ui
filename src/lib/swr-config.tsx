@@ -35,7 +35,7 @@ function localStorageProvider(): Cache<any> {
 }
 
 function swrFetcher(path: string) {
-  return fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api"}${path}`, {
+  return fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api"}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(typeof window !== "undefined" && sessionStorage.getItem("access_token")

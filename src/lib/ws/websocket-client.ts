@@ -20,7 +20,7 @@ export class WebSocketClient {
   private isIntentionallyClosed = false;
 
   constructor(config: { url?: string; getToken: () => string | null }) {
-    this.url = config.url || process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/api/ws";
+    this.url = config.url || process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8888/api/ws";
     this.getToken = config.getToken;
   }
 

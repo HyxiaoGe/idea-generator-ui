@@ -97,6 +97,7 @@ export interface BatchGenerateRequest {
   prompts: string[];
   settings?: Partial<GenerationSettings>;
   enhance_prompt?: boolean;
+  template_id?: string;
 }
 
 export interface BatchGenerateResponse {
@@ -347,6 +348,8 @@ export interface TemplateListItem {
   id: string;
   display_name_en: string;
   display_name_zh: string;
+  description_en?: string;
+  description_zh?: string;
   preview_image_url?: string;
   category: string;
   tags: string[];

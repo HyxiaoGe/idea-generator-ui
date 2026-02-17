@@ -54,7 +54,7 @@ export class ApiClient {
     onUnauthorized?: () => void;
   }) {
     this.baseUrl =
-      config.baseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+      config.baseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api";
     this.getToken = config.getToken;
     this.onUnauthorized = config.onUnauthorized || (() => {});
   }

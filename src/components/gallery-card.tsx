@@ -142,11 +142,28 @@ export function GalleryCard({
 
       <div className="pointer-events-none p-3">
         <p className="text-text-primary mb-2 line-clamp-2 text-sm">{item.prompt}</p>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="bg-surface-secondary text-text-secondary rounded-md px-2 py-0.5 text-xs">
             {getModeDisplayName(item.mode)}
           </span>
-          <span className="text-text-secondary text-xs">{formatRelativeTime(item.created_at)}</span>
+          {item.provider && (
+            <span className="bg-surface-secondary text-text-secondary rounded-md px-2 py-0.5 text-xs">
+              {item.provider}
+            </span>
+          )}
+          {item.model && (
+            <span className="bg-surface-secondary text-text-secondary truncate rounded-md px-2 py-0.5 text-xs">
+              {item.model}
+            </span>
+          )}
+          {item.duration != null && (
+            <span className="bg-surface-secondary text-text-secondary rounded-md px-2 py-0.5 text-xs">
+              {item.duration.toFixed(1)}s
+            </span>
+          )}
+          <span className="text-text-secondary ml-auto text-xs">
+            {formatRelativeTime(item.created_at)}
+          </span>
         </div>
       </div>
     </div>
