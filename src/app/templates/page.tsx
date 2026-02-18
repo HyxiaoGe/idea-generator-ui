@@ -178,7 +178,7 @@ export default function TemplatesPage() {
             placeholder="搜索模板..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-border bg-surface w-full rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 md:w-[240px]"
+            className="border-border bg-surface focus:border-primary-start focus:ring-primary-start/20 w-full rounded-xl focus:ring-2 md:w-[240px]"
           />
         </div>
       </div>
@@ -190,8 +190,8 @@ export default function TemplatesPage() {
             onClick={() => setSelectedCategory(category)}
             className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
               selectedCategory === category
-                ? "bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white shadow-lg shadow-[#7C3AED]/30"
-                : "border-border bg-surface text-text-secondary hover:text-text-primary border hover:border-[#7C3AED]"
+                ? "from-primary-start to-primary-end shadow-primary-start/30 bg-gradient-to-r text-white shadow-lg"
+                : "border-border bg-surface text-text-secondary hover:text-text-primary hover:border-primary-start border"
             }`}
           >
             {category === "推荐" && "🔥 "}
@@ -209,7 +209,7 @@ export default function TemplatesPage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: index * 0.06, type: "spring", stiffness: 280, damping: 22 }}
             whileHover={{ y: -8, scale: 1.02 }}
-            className="group border-border bg-surface overflow-hidden rounded-2xl border transition-all duration-300 hover:border-[#7C3AED] hover:shadow-2xl hover:shadow-[#7C3AED]/30"
+            className="group border-border bg-surface hover:border-primary-start hover:shadow-primary-start/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl"
           >
             <div className="bg-background relative aspect-video overflow-hidden">
               <img
@@ -219,7 +219,7 @@ export default function TemplatesPage() {
               />
 
               {template.use_count > 10000 && (
-                <div className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EF4444] px-2 py-1 backdrop-blur-sm">
+                <div className="from-warning to-destructive absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-gradient-to-r px-2 py-1 backdrop-blur-sm">
                   <Sparkles className="h-3 w-3 text-white" />
                   <span className="text-xs font-medium text-white">热门</span>
                 </div>
@@ -243,7 +243,7 @@ export default function TemplatesPage() {
                 <div className="absolute right-0 bottom-0 left-0 p-4">
                   <Button
                     onClick={() => handleUseTemplate(template)}
-                    className="w-full rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+                    className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 w-full rounded-xl bg-gradient-to-r"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
                     使用此模板
@@ -282,7 +282,7 @@ export default function TemplatesPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleUseTemplate(template)}
-                  className="h-8 text-[#7C3AED] hover:text-[#7C3AED]/80"
+                  className="text-primary-start hover:text-primary-start/80 h-8"
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
                   生成
@@ -295,7 +295,7 @@ export default function TemplatesPage() {
 
       {filteredTemplates.length === 0 && (
         <div className="border-border bg-surface flex min-h-[400px] flex-col items-center justify-center rounded-2xl border p-12">
-          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20 text-5xl">
+          <div className="from-primary-start/20 to-primary-end/20 mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br text-5xl">
             📚
           </div>
           <h2 className="text-text-primary mb-2 text-xl font-semibold">未找到模板</h2>

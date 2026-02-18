@@ -278,7 +278,7 @@ export function LoadingSpinner({
     >
       {variant === "default" ? (
         <div
-          className={`${sizeClasses[size]} border-border rounded-full border-2 border-t-[#7C3AED]`}
+          className={`${sizeClasses[size]} border-border border-t-primary-start rounded-full border-2`}
         />
       ) : (
         <div

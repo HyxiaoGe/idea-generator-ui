@@ -189,20 +189,20 @@ export default function SettingsPage() {
         {/* Account Section */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
           <div className="mb-6 flex items-center gap-2">
-            <User className="h-5 w-5 text-[#7C3AED]" />
+            <User className="text-primary-start h-5 w-5" />
             <h2 className="text-text-primary text-xl font-semibold">账户</h2>
           </div>
 
           <div className="space-y-6">
             <div className="flex items-center gap-6">
-              <Avatar className="h-20 w-20 ring-2 ring-[#7C3AED]/20">
+              <Avatar className="ring-primary-start/20 h-20 w-20 ring-2">
                 <AvatarImage
                   src={
                     user?.avatar_url ||
                     `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.login || "default"}`
                   }
                 />
-                <AvatarFallback className="bg-gradient-to-br from-[#7C3AED] to-[#2563EB]">
+                <AvatarFallback className="from-primary-start to-primary-end bg-gradient-to-br">
                   <User className="h-10 w-10 text-white" />
                 </AvatarFallback>
               </Avatar>
@@ -235,7 +235,7 @@ export default function SettingsPage() {
         {/* API Keys Section */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
           <div className="mb-6 flex items-center gap-2">
-            <Key className="h-5 w-5 text-[#7C3AED]" />
+            <Key className="text-primary-start h-5 w-5" />
             <h2 className="text-text-primary text-xl font-semibold">API 密钥</h2>
           </div>
 
@@ -247,12 +247,12 @@ export default function SettingsPage() {
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateApiKey()}
-                className="border-border bg-surface-elevated flex-1 rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 flex-1 rounded-xl focus:ring-2"
               />
               <Button
                 onClick={handleCreateApiKey}
                 disabled={isCreatingKey || !newKeyName.trim()}
-                className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+                className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r"
               >
                 {isCreatingKey ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -312,7 +312,7 @@ export default function SettingsPage() {
         {/* Quota Usage Section */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
           <div className="mb-6 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-[#7C3AED]" />
+            <TrendingUp className="text-primary-start h-5 w-5" />
             <h2 className="text-text-primary text-xl font-semibold">配额使用</h2>
           </div>
 
@@ -332,7 +332,7 @@ export default function SettingsPage() {
                   </p>
                 )}
                 {quota?.cooldown_active && (
-                  <p className="text-xs text-[#F59E0B]">
+                  <p className="text-warning text-xs">
                     冷却中（剩余 {quota.cooldown_remaining}秒）
                   </p>
                 )}
@@ -347,7 +347,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-text-secondary text-sm">剩余</p>
-                  <p className="text-2xl font-semibold text-[#10B981]">{quota.remaining}</p>
+                  <p className="text-accent text-2xl font-semibold">{quota.remaining}</p>
                 </div>
                 <div>
                   <p className="text-text-secondary text-sm">每日上限</p>
@@ -361,7 +361,7 @@ export default function SettingsPage() {
         {/* Preferences Section */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
           <div className="mb-6 flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5 text-[#7C3AED]" />
+            <SettingsIcon className="text-primary-start h-5 w-5" />
             <h2 className="text-text-primary text-xl font-semibold">偏好设置</h2>
           </div>
 
@@ -373,7 +373,7 @@ export default function SettingsPage() {
               <Select value={resolution} onValueChange={handleResolutionChange}>
                 <SelectTrigger
                   id="default-resolution"
-                  className="border-border bg-surface-secondary rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                  className="border-border bg-surface-secondary focus:border-primary-start focus:ring-primary-start/20 rounded-xl focus:ring-2"
                 >
                   <SelectValue placeholder="1024x1024" />
                 </SelectTrigger>
@@ -392,7 +392,7 @@ export default function SettingsPage() {
               <Select value={language} onValueChange={handleLanguageChange}>
                 <SelectTrigger
                   id="language"
-                  className="border-border bg-surface-secondary rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                  className="border-border bg-surface-secondary focus:border-primary-start focus:ring-primary-start/20 rounded-xl focus:ring-2"
                 >
                   <SelectValue placeholder="简体中文" />
                 </SelectTrigger>
@@ -420,7 +420,7 @@ export default function SettingsPage() {
               <Switch
                 checked={theme === "dark"}
                 onCheckedChange={handleThemeChange}
-                className="data-[state=checked]:bg-[#7C3AED]"
+                className="data-[state=checked]:bg-primary-start"
               />
             </div>
 
@@ -435,7 +435,7 @@ export default function SettingsPage() {
               <Switch
                 checked={enableNotifications}
                 onCheckedChange={handleNotificationsChange}
-                className="data-[state=checked]:bg-[#7C3AED]"
+                className="data-[state=checked]:bg-primary-start"
               />
             </div>
 
@@ -450,7 +450,7 @@ export default function SettingsPage() {
               <Switch
                 checked={enableSound}
                 onCheckedChange={handleSoundChange}
-                className="data-[state=checked]:bg-[#7C3AED]"
+                className="data-[state=checked]:bg-primary-start"
               />
             </div>
           </div>
@@ -459,19 +459,19 @@ export default function SettingsPage() {
         {/* Developer Documentation Section */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
           <div className="mb-6 flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-[#7C3AED]" />
+            <BookOpen className="text-primary-start h-5 w-5" />
             <h2 className="text-text-primary text-xl font-semibold">开发文档</h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <button
               onClick={() => router.push("/design-system")}
-              className="group border-border bg-surface-secondary hover:bg-surface rounded-xl border p-6 text-left transition-all hover:border-[#7C3AED]"
+              className="group border-border bg-surface-secondary hover:bg-surface hover:border-primary-start rounded-xl border p-6 text-left transition-all"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB]">
+              <div className="from-primary-start to-primary-end mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r">
                 <Layout className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-text-primary mb-2 font-semibold group-hover:text-[#7C3AED]">
+              <h3 className="text-text-primary group-hover:text-primary-start mb-2 font-semibold">
                 设计系统
               </h3>
               <p className="text-text-secondary text-sm">颜色、字体、间距等设计规范</p>
@@ -479,12 +479,12 @@ export default function SettingsPage() {
 
             <button
               onClick={() => router.push("/components")}
-              className="group border-border bg-surface-secondary hover:bg-surface rounded-xl border p-6 text-left transition-all hover:border-[#7C3AED]"
+              className="group border-border bg-surface-secondary hover:bg-surface hover:border-primary-start rounded-xl border p-6 text-left transition-all"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB]">
+              <div className="from-primary-start to-primary-end mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r">
                 <Layers className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-text-primary mb-2 font-semibold group-hover:text-[#7C3AED]">
+              <h3 className="text-text-primary group-hover:text-primary-start mb-2 font-semibold">
                 组件库
               </h3>
               <p className="text-text-secondary text-sm">所有可复用组件及其变体</p>
@@ -492,20 +492,20 @@ export default function SettingsPage() {
 
             <button
               onClick={() => router.push("/pages-overview")}
-              className="group border-border bg-surface-secondary hover:bg-surface rounded-xl border p-6 text-left transition-all hover:border-[#7C3AED]"
+              className="group border-border bg-surface-secondary hover:bg-surface hover:border-primary-start rounded-xl border p-6 text-left transition-all"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB]">
+              <div className="from-primary-start to-primary-end mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-text-primary mb-2 font-semibold group-hover:text-[#7C3AED]">
+              <h3 className="text-text-primary group-hover:text-primary-start mb-2 font-semibold">
                 页面总览
               </h3>
               <p className="text-text-secondary text-sm">完整的页面结构和用户流程</p>
             </button>
           </div>
 
-          <div className="mt-6 rounded-xl border border-[#10B981]/30 bg-[#10B981]/10 p-4">
-            <p className="text-sm text-[#10B981]">
+          <div className="border-accent/30 bg-accent/10 mt-6 rounded-xl border p-4">
+            <p className="text-accent text-sm">
               这些文档页面专为开发交接准备，包含完整的设计规范和组件说明
             </p>
           </div>

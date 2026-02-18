@@ -253,6 +253,25 @@ function GalleryContent() {
     [filteredItems]
   );
 
+  // Infinite scroll sentinel
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setSize((s) => s + 1);
+        }
+      },
+      { rootMargin: "0px 0px 200px 0px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, setSize]);
+
   // Auto-open lightbox when URL has ?id=xxx, then clear the param
   useEffect(() => {
     if (selectedItemId && filteredItems.length > 0) {
@@ -291,7 +310,7 @@ function GalleryContent() {
                   onClick={() => setTypeFilter(filter)}
                   className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
                     typeFilter === filter
-                      ? "bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white"
+                      ? "from-primary-start to-primary-end bg-gradient-to-r text-white"
                       : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
@@ -336,7 +355,7 @@ function GalleryContent() {
                   placeholder="搜索..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="border-border bg-surface w-full rounded-xl pl-10 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                  className="border-border bg-surface focus:border-primary-start focus:ring-primary-start/20 w-full rounded-xl pl-10 focus:ring-2"
                 />
               </div>
             </div>
@@ -346,14 +365,14 @@ function GalleryContent() {
         {!hasItems ? (
           /* Empty State */
           <div className="border-border bg-surface flex min-h-[500px] flex-col items-center justify-center rounded-2xl border p-12">
-            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20 text-6xl">
+            <div className="from-primary-start/20 to-primary-end/20 mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br text-6xl">
               📁
             </div>
             <h2 className="text-text-primary mb-2 text-2xl font-semibold">还没有作品</h2>
             <p className="text-text-secondary mb-8 text-center text-sm">开始创作你的第一张图片吧</p>
             <Button
               onClick={() => router.push("/")}
-              className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-8 py-3 hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+              className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r px-8 py-3"
             >
               去创作 →
             </Button>
@@ -407,24 +426,10 @@ function GalleryContent() {
               }}
             />
 
-            {/* Load More */}
+            {/* Infinite scroll sentinel */}
             {typeFilter !== "favorite" && hasMore && (
-              <div className="mt-8 flex justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setSize(size + 1)}
-                  disabled={isLoadingMore}
-                  className="border-border rounded-xl px-8"
-                >
-                  {isLoadingMore ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      加载中...
-                    </>
-                  ) : (
-                    "加载更多"
-                  )}
-                </Button>
+              <div ref={sentinelRef} className="mt-8 flex justify-center py-4">
+                <Loader2 className="text-text-secondary h-6 w-6 animate-spin" />
               </div>
             )}
           </>

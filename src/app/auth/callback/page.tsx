@@ -61,7 +61,7 @@ function CallbackContent() {
           <p className="text-text-secondary mb-6 text-sm">{error}</p>
           <button
             onClick={() => router.replace("/login")}
-            className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-6 py-2 text-white"
+            className="from-primary-start to-primary-end rounded-xl bg-gradient-to-r px-6 py-2 text-white"
           >
             返回登录
           </button>
@@ -73,7 +73,7 @@ function CallbackContent() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7C3AED] border-t-transparent" />
+        <div className="border-primary-start h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
         <p className="text-text-secondary text-sm">正在完成登录...</p>
       </div>
     </div>
@@ -85,7 +85,7 @@ export default function AuthCallbackPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7C3AED] border-t-transparent" />
+          <div className="border-primary-start h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
         </div>
       }
     >

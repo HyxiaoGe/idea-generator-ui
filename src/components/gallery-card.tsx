@@ -38,7 +38,7 @@ export function GalleryCard({
 
   return (
     <div
-      className="group border-border bg-surface relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-300 will-change-transform hover:-translate-y-1 hover:border-[#7C3AED] hover:shadow-2xl hover:shadow-[#7C3AED]/30"
+      className="group border-border bg-surface hover:border-primary-start hover:shadow-primary-start/30 relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-300 will-change-transform hover:-translate-y-1 hover:shadow-2xl"
       style={{ width, backfaceVisibility: "hidden", transform: "translateZ(0)" }}
       onClick={onClick}
       onMouseEnter={() => isVideo && setIsVideoHovered(true)}
@@ -93,6 +93,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
+              aria-label={item.favorite ? "取消收藏" : "收藏"}
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-black/60 active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
@@ -106,6 +107,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
+              aria-label="下载"
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-black/60"
               onClick={(e) => {
                 e.stopPropagation();
@@ -117,6 +119,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
+              aria-label="重新使用"
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-black/60"
               onClick={(e) => {
                 e.stopPropagation();
@@ -128,6 +131,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
+              aria-label="删除"
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-red-500/80"
               onClick={(e) => {
                 e.stopPropagation();

@@ -33,9 +33,13 @@ export function PromptInput({
       <div className="relative">
         {selectedTemplateId && (
           <div className="absolute top-3 left-3 z-10">
-            <span className="inline-flex items-center gap-1 rounded-md bg-[#7C3AED]/20 px-2 py-0.5 text-xs text-[#7C3AED]">
+            <span className="bg-primary-start/20 text-primary-start inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs">
               模板
-              <button onClick={onClearTemplate} className="hover:text-[#7C3AED]/70">
+              <button
+                onClick={onClearTemplate}
+                aria-label="清除模板"
+                className="hover:text-primary-start/70"
+              >
                 ✕
               </button>
             </span>
@@ -52,7 +56,7 @@ export function PromptInput({
               onGenerate();
             }
           }}
-          className={`border-border bg-surface-elevated text-text-primary placeholder:text-text-secondary min-h-[120px] resize-none rounded-xl pr-32 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 ${selectedTemplateId ? "pt-10" : ""}`}
+          className={`border-border bg-surface-elevated text-text-primary placeholder:text-text-secondary focus:border-primary-start focus:ring-primary-start/20 min-h-[120px] resize-none rounded-xl pr-32 focus:ring-2 ${selectedTemplateId ? "pt-10" : ""}`}
         />
         <div className="absolute right-3 bottom-3 flex gap-2">
           <Button
@@ -60,6 +64,7 @@ export function PromptInput({
             variant="ghost"
             onClick={onNavigateTemplates}
             className="text-text-secondary hover:bg-surface-elevated hover:text-text-primary h-9 w-9 p-0"
+            aria-label="模板"
             title="模板"
           >
             <BookOpen className="h-4 w-4" />
@@ -71,9 +76,10 @@ export function PromptInput({
             disabled={!prompt}
             className={`h-9 w-9 p-0 disabled:opacity-50 ${
               enhancePrompt
-                ? "bg-[#7C3AED]/20 text-[#7C3AED] hover:bg-[#7C3AED]/30"
+                ? "bg-primary-start/20 text-primary-start hover:bg-primary-start/30"
                 : "text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
             }`}
+            aria-label={enhancePrompt ? "AI优化已开启" : "AI优化"}
             title={enhancePrompt ? "AI优化已开启" : "AI优化"}
           >
             <Wand2 className="h-4 w-4" />
@@ -82,7 +88,8 @@ export function PromptInput({
             size="sm"
             onClick={onGenerate}
             disabled={!prompt || isGenerating}
-            className="h-9 w-9 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] p-0 hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90 disabled:opacity-50"
+            aria-label={isGenerating ? "生成中" : "生成"}
+            className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 h-9 w-9 bg-gradient-to-r p-0 disabled:opacity-50"
           >
             {isGenerating ? (
               <motion.div

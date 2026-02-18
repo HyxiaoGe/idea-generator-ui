@@ -81,7 +81,7 @@ export function PreviewPanel({
                 onClick={() => onImageSelect(index)}
                 className={`overflow-hidden rounded-lg transition-all ${
                   selectedImageIndex === index
-                    ? "shadow-lg ring-2 shadow-[#7C3AED]/50 ring-[#7C3AED]"
+                    ? "shadow-primary-start/50 ring-primary-start shadow-lg ring-2"
                     : "ring-border hover:ring-text-secondary ring-1"
                 }`}
               >

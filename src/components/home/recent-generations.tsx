@@ -42,7 +42,7 @@ export function RecentGenerations({
         <Button
           variant="ghost"
           onClick={onNavigateGallery}
-          className="text-[#10B981] hover:text-[#10B981]/80"
+          className="text-accent hover:text-accent/80"
         >
           查看全部
           <ChevronRight className="ml-1 h-4 w-4" />

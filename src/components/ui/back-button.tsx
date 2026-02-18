@@ -24,7 +24,7 @@ export function BackButton({ onClick, label, className }: BackButtonProps) {
     >
       <motion.div
         whileHover={{ rotate: -5 }}
-        className="bg-surface-secondary border-border group-hover:bg-surface flex size-10 items-center justify-center rounded-xl border transition-all group-hover:border-[#7C3AED] group-hover:shadow-lg group-hover:shadow-[#7C3AED]/20"
+        className="bg-surface-secondary border-border group-hover:bg-surface group-hover:border-primary-start group-hover:shadow-primary-start/20 flex size-10 items-center justify-center rounded-xl border transition-all group-hover:shadow-lg"
       >
         <ArrowLeft className="text-text-primary h-5 w-5" />
       </motion.div>

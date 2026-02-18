@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, ImageIcon, Video, Folder, BookTemplate, Sun, Moon, LogIn } from "lucide-react";
+import {
+  Settings,
+  ImageIcon,
+  Video,
+  Folder,
+  BookTemplate,
+  Sun,
+  Moon,
+  LogIn,
+  Menu,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "./ui/button";
 import {
@@ -68,7 +78,7 @@ export function Navigation() {
   const getQuotaColor = () => {
     if (quota.percentage > 95) return "bg-red-500";
     if (quota.percentage > 80) return "bg-orange-500";
-    return "bg-gradient-to-r from-[#7C3AED] to-[#2563EB]";
+    return "bg-gradient-to-r from-primary-start to-primary-end";
   };
 
   const isSettingsActive =
@@ -98,7 +108,7 @@ export function Navigation() {
               e.stopPropagation();
               handleNavigate("/generating-demo");
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] shadow-md shadow-[#7C3AED]/25 transition-all duration-300"
+            className="from-primary-start to-primary-end shadow-primary-start/25 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br shadow-md transition-all duration-300"
             whileHover={{
               scale: 1.05,
               boxShadow: "0 10px 25px -5px rgba(124, 58, 237, 0.4)",
@@ -106,7 +116,7 @@ export function Navigation() {
           >
             <ImageIcon className="h-5 w-5 text-white" />
           </motion.div>
-          <span className="text-text-primary text-lg font-semibold transition-colors group-hover:bg-gradient-to-r group-hover:from-[#7C3AED] group-hover:to-[#2563EB] group-hover:bg-clip-text group-hover:text-transparent">
+          <span className="text-text-primary group-hover:from-primary-start group-hover:to-primary-end text-lg font-semibold transition-colors group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:text-transparent">
             AI 创作工坊
           </span>
         </motion.button>
@@ -127,7 +137,7 @@ export function Navigation() {
               {contentType === "image" && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-lg shadow-[#7C3AED]/30"
+                  className="from-primary-start to-primary-end shadow-primary-start/30 absolute inset-0 rounded-lg bg-gradient-to-r shadow-lg"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
@@ -147,7 +157,7 @@ export function Navigation() {
               {contentType === "video" && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-lg shadow-[#7C3AED]/30"
+                  className="from-primary-start to-primary-end shadow-primary-start/30 absolute inset-0 rounded-lg bg-gradient-to-r shadow-lg"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
@@ -159,149 +169,209 @@ export function Navigation() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* Gallery Button */}
-          <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              onClick={() => handleNavigate("/gallery")}
-              className={`relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 ${
-                pathname === "/gallery"
-                  ? "bg-gradient-to-r from-[#7C3AED]/15 to-[#2563EB]/15 text-[#7C3AED] shadow-md shadow-[#7C3AED]/10"
-                  : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
-              }`}
-            >
-              <motion.div
-                animate={
+          {/* Desktop nav items — hidden below md */}
+          <div className="hidden md:flex md:items-center md:gap-2">
+            {/* Gallery Button */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                onClick={() => handleNavigate("/gallery")}
+                className={`relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 ${
                   pathname === "/gallery"
-                    ? {
-                        scale: [1, 1.1, 1],
-                      }
-                    : {}
-                }
-                transition={{ duration: 0.3 }}
+                    ? "from-primary-start/15 to-primary-end/15 text-primary-start shadow-primary-start/10 bg-gradient-to-r shadow-md"
+                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
               >
-                <Folder className="h-4 w-4" />
-              </motion.div>
-              <span className="hidden sm:inline">画廊</span>
-              {pathname === "/gallery" && (
                 <motion.div
-                  layoutId="navIndicator"
-                  className="absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-sm shadow-[#7C3AED]/50"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-            </Button>
-          </motion.div>
-
-          {/* Templates Button */}
-          <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              onClick={() => handleNavigate("/templates")}
-              className={`relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 ${
-                pathname === "/templates"
-                  ? "bg-gradient-to-r from-[#7C3AED]/15 to-[#2563EB]/15 text-[#7C3AED] shadow-md shadow-[#7C3AED]/10"
-                  : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
-              }`}
-            >
-              <motion.div
-                animate={
-                  pathname === "/templates"
-                    ? {
-                        scale: [1, 1.1, 1],
-                      }
-                    : {}
-                }
-                transition={{ duration: 0.3 }}
-              >
-                <BookTemplate className="h-4 w-4" />
-              </motion.div>
-              <span className="hidden sm:inline">模板</span>
-              {pathname === "/templates" && (
-                <motion.div
-                  layoutId="navIndicator"
-                  className="absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] shadow-sm shadow-[#7C3AED]/50"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-            </Button>
-          </motion.div>
-
-          {/* Divider */}
-          <div className="bg-border mx-1 h-6 w-px" />
-
-          {/* Theme Toggle Button */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleThemeToggle}
-              className="group text-text-secondary hover:bg-surface-secondary hover:text-text-primary relative rounded-lg transition-all"
-              title={!mounted ? "切换主题" : theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
-            >
-              {mounted ? (
-                <motion.div
-                  initial={false}
-                  animate={{ rotate: theme === "dark" ? 0 : 180 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  animate={
+                    pathname === "/gallery"
+                      ? {
+                          scale: [1, 1.1, 1],
+                        }
+                      : {}
+                  }
+                  transition={{ duration: 0.3 }}
                 >
-                  {theme === "dark" ? (
-                    <Sun className="h-5 w-5 transition-all group-hover:text-amber-400 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                  ) : (
-                    <Moon className="h-5 w-5 transition-all group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
-                  )}
+                  <Folder className="h-4 w-4" />
                 </motion.div>
-              ) : (
-                <Sun className="h-5 w-5" />
-              )}
-              {mounted && (
-                <motion.div
-                  className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{
-                    background:
-                      theme === "dark"
-                        ? "radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%)"
-                        : "radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%)",
-                  }}
-                />
-              )}
-            </Button>
-          </motion.div>
+                <span className="hidden sm:inline">画廊</span>
+                {pathname === "/gallery" && (
+                  <motion.div
+                    layoutId="navIndicator"
+                    className="from-primary-start to-primary-end shadow-primary-start/50 absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r shadow-sm"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </Button>
+            </motion.div>
 
-          {/* Settings Icon */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleNavigate("/settings")}
-              className={`group relative rounded-lg transition-all duration-200 ${
-                isSettingsActive
-                  ? "bg-gradient-to-r from-[#7C3AED]/15 to-[#2563EB]/15 text-[#7C3AED] shadow-md shadow-[#7C3AED]/10"
-                  : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
-              }`}
-            >
-              <motion.div
-                animate={isSettingsActive ? { rotate: [0, 90, 0] } : {}}
-                transition={{ duration: 0.5 }}
-                whileHover={{ rotate: 90 }}
+            {/* Templates Button */}
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                onClick={() => handleNavigate("/templates")}
+                className={`relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 ${
+                  pathname === "/templates"
+                    ? "from-primary-start/15 to-primary-end/15 text-primary-start shadow-primary-start/10 bg-gradient-to-r shadow-md"
+                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
               >
-                <Settings className="h-5 w-5" />
-              </motion.div>
-              {isSettingsActive && (
                 <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-[#7C3AED]/30"
-                />
-              )}
-            </Button>
-          </motion.div>
+                  animate={
+                    pathname === "/templates"
+                      ? {
+                          scale: [1, 1.1, 1],
+                        }
+                      : {}
+                  }
+                  transition={{ duration: 0.3 }}
+                >
+                  <BookTemplate className="h-4 w-4" />
+                </motion.div>
+                <span className="hidden sm:inline">模板</span>
+                {pathname === "/templates" && (
+                  <motion.div
+                    layoutId="navIndicator"
+                    className="from-primary-start to-primary-end shadow-primary-start/50 absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r shadow-sm"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </Button>
+            </motion.div>
+
+            {/* Divider */}
+            <div className="bg-border mx-1 h-6 w-px" />
+
+            {/* Theme Toggle Button */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleThemeToggle}
+                className="group text-text-secondary hover:bg-surface-secondary hover:text-text-primary relative rounded-lg transition-all"
+                aria-label={
+                  !mounted ? "切换主题" : theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
+                }
+                title={
+                  !mounted ? "切换主题" : theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
+                }
+              >
+                {mounted ? (
+                  <motion.div
+                    initial={false}
+                    animate={{ rotate: theme === "dark" ? 0 : 180 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  >
+                    {theme === "dark" ? (
+                      <Sun className="h-5 w-5 transition-all group-hover:text-amber-400 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+                    ) : (
+                      <Moon className="h-5 w-5 transition-all group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]" />
+                    )}
+                  </motion.div>
+                ) : (
+                  <Sun className="h-5 w-5" />
+                )}
+                {mounted && (
+                  <motion.div
+                    className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
+                    style={{
+                      background:
+                        theme === "dark"
+                          ? "radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%)"
+                          : "radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%)",
+                    }}
+                  />
+                )}
+              </Button>
+            </motion.div>
+
+            {/* Settings Icon */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleNavigate("/settings")}
+                aria-label="设置"
+                className={`group relative rounded-lg transition-all duration-200 ${
+                  isSettingsActive
+                    ? "from-primary-start/15 to-primary-end/15 text-primary-start shadow-primary-start/10 bg-gradient-to-r shadow-md"
+                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+                }`}
+              >
+                <motion.div
+                  animate={isSettingsActive ? { rotate: [0, 90, 0] } : {}}
+                  transition={{ duration: 0.5 }}
+                  whileHover={{ rotate: 90 }}
+                >
+                  <Settings className="h-5 w-5" />
+                </motion.div>
+                {isSettingsActive && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="ring-primary-start/30 pointer-events-none absolute inset-0 rounded-lg ring-2"
+                  />
+                )}
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Mobile hamburger — visible below md */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="菜单">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => handleNavigate("/gallery")}
+                >
+                  <Folder className="mr-2 h-4 w-4" />
+                  画廊
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => handleNavigate("/templates")}
+                >
+                  <BookTemplate className="mr-2 h-4 w-4" />
+                  模板
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => {
+                    toggleThemeWithAnimation({ x: window.innerWidth - 40, y: 32 });
+                    toast.success(theme === "dark" ? "已切换到浅色模式" : "已切换到深色模式", {
+                      duration: 2000,
+                    });
+                  }}
+                >
+                  {mounted && theme === "dark" ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  切换主题
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => handleNavigate("/settings")}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  设置
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Quota Progress + Avatar (or Login button) */}
           <div className="flex items-center gap-3 pl-2">
             {isAuthenticated && quotaData && (
               /* Quota Indicator */
-              <div className="hidden md:block">
+              <div>
                 <div className="group relative">
                   <div className="bg-surface-elevated mb-1 h-1.5 w-20 overflow-hidden rounded-full shadow-inner">
                     <motion.div
@@ -327,14 +397,14 @@ export function Navigation() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Avatar className="ring-border h-9 w-9 cursor-pointer ring-2 transition-all duration-300 hover:shadow-lg hover:shadow-[#7C3AED]/20 hover:ring-[#7C3AED]">
+                    <Avatar className="ring-border hover:shadow-primary-start/20 hover:ring-primary-start h-9 w-9 cursor-pointer ring-2 transition-all duration-300 hover:shadow-lg">
                       <AvatarImage
                         src={
                           user.avatar_url ||
                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.login}`
                         }
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-white">
+                      <AvatarFallback className="from-primary-start to-primary-end bg-gradient-to-br text-white">
                         {(user.name || user.login || "U").charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>

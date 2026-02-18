@@ -240,7 +240,7 @@ export default function ImageToVideoPage() {
               /* Generating State */
               <div className="flex aspect-video flex-col items-center justify-center">
                 <motion.div
-                  className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB]"
+                  className="from-primary-start to-primary-end mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 >
@@ -257,9 +257,9 @@ export default function ImageToVideoPage() {
               <div>
                 <h3 className="text-text-primary mb-4 font-semibold">上传图片</h3>
                 {!uploadedImage ? (
-                  <label className="border-border bg-background hover:bg-surface flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all hover:border-[#7C3AED]">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20">
-                      <Upload className="h-8 w-8 text-[#7C3AED]" />
+                  <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
+                    <div className="from-primary-start/20 to-primary-end/20 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br">
+                      <Upload className="text-primary-start h-8 w-8" />
                     </div>
                     <p className="text-text-primary mb-1 text-sm font-medium">上传一张图片</p>
                     <p className="text-text-secondary text-xs">
@@ -382,7 +382,7 @@ export default function ImageToVideoPage() {
               <Button
                 onClick={handleGenerate}
                 disabled={!uploadedImage || state === "generating"}
-                className="w-full rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-6 hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90 disabled:opacity-50"
+                className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 w-full rounded-xl bg-gradient-to-r py-6 disabled:opacity-50"
               >
                 {state === "generating" ? "生成中..." : "生成视频"}
               </Button>

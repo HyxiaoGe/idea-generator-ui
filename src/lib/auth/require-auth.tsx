@@ -21,7 +21,7 @@ export function RequireAuth({ children, fallback }: RequireAuthProps) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7C3AED] border-t-transparent" />
+          <div className="border-primary-start h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
           <p className="text-text-secondary text-sm">加载中...</p>
         </div>
       </div>
@@ -33,8 +33,8 @@ export function RequireAuth({ children, fallback }: RequireAuthProps) {
 
     return (
       <div className="border-border bg-surface flex min-h-[500px] flex-col items-center justify-center rounded-2xl border p-12">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20">
-          <LogIn className="h-12 w-12 text-[#7C3AED]" />
+        <div className="from-primary-start/20 to-primary-end/20 mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br">
+          <LogIn className="text-primary-start h-12 w-12" />
         </div>
         <h2 className="text-text-primary mb-2 text-2xl font-semibold">请先登录</h2>
         <p className="text-text-secondary mb-8 text-center text-sm">
@@ -42,7 +42,7 @@ export function RequireAuth({ children, fallback }: RequireAuthProps) {
         </p>
         <Button
           onClick={login}
-          className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-8 py-3 hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+          className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r px-8 py-3"
         >
           <LogIn className="mr-2 h-4 w-4" />
           使用 GitHub 登录

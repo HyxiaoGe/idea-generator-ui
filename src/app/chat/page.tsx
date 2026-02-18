@@ -350,7 +350,7 @@ export default function ChatPage() {
             </Button>
             <Button
               onClick={handleNewChat}
-              className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+              className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r"
             >
               新对话
             </Button>
@@ -377,8 +377,8 @@ export default function ChatPage() {
                         key={session.session_id}
                         className={`border-border bg-surface-secondary flex items-center justify-between rounded-xl border p-3 transition-all ${
                           session.session_id === sessionId
-                            ? "border-[#7C3AED] ring-1 ring-[#7C3AED]/30"
-                            : "hover:border-[#7C3AED]/50"
+                            ? "border-primary-start ring-primary-start/30 ring-1"
+                            : "hover:border-primary-start/50"
                         }`}
                       >
                         <button
@@ -417,13 +417,13 @@ export default function ChatPage() {
 
         {messages.length === 0 ? (
           <div className="border-border bg-surface flex min-h-[600px] flex-col items-center justify-center rounded-2xl border p-12">
-            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20">
+            <div className="from-primary-start/20 to-primary-end/20 mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br">
               <div className="relative">
-                <div className="absolute -top-2 -left-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-2xl">
+                <div className="from-primary-start to-primary-end absolute -top-2 -left-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-2xl">
                   💬
                 </div>
                 <div className="bg-surface h-12 w-12 rounded-lg p-2">
-                  <div className="h-full w-full rounded-md bg-gradient-to-br from-[#7C3AED]/40 to-[#2563EB]/40"></div>
+                  <div className="from-primary-start/40 to-primary-end/40 h-full w-full rounded-md bg-gradient-to-br"></div>
                 </div>
               </div>
             </div>
@@ -455,7 +455,7 @@ export default function ChatPage() {
                   key={index}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => handleExampleClick(prompt)}
-                  className="border-border bg-surface-secondary text-text-primary hover:bg-surface rounded-full border px-4 py-2 text-sm transition-all hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20"
+                  className="border-border bg-surface-secondary text-text-primary hover:bg-surface hover:border-primary-start hover:shadow-primary-start/20 rounded-full border px-4 py-2 text-sm transition-all hover:shadow-lg"
                 >
                   {prompt}
                 </motion.button>
@@ -564,7 +564,7 @@ export default function ChatPage() {
                         }}
                         className={`flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                           currentVersion === version.id
-                            ? "scale-110 border-[#7C3AED] shadow-lg shadow-[#7C3AED]/50"
+                            ? "border-primary-start shadow-primary-start/50 scale-110 shadow-lg"
                             : "border-border hover:border-text-secondary"
                         }`}
                       >
@@ -600,7 +600,7 @@ export default function ChatPage() {
                       className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {message.role === "assistant" && (
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#2563EB]">
+                        <div className="from-primary-start to-primary-end flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br">
                           <Bot className="h-4 w-4 text-white" />
                         </div>
                       )}
@@ -608,7 +608,7 @@ export default function ChatPage() {
                       <div
                         className={`max-w-[80%] rounded-xl p-3 ${
                           message.role === "user"
-                            ? "bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white"
+                            ? "from-primary-start to-primary-end bg-gradient-to-r text-white"
                             : "border-border bg-surface-secondary text-text-primary border"
                         }`}
                       >
@@ -649,7 +649,7 @@ export default function ChatPage() {
                       </div>
 
                       {message.role === "user" && (
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#10B981]">
+                        <div className="bg-accent flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                           <User className="h-4 w-4 text-white" />
                         </div>
                       )}
@@ -672,7 +672,7 @@ export default function ChatPage() {
                   <Button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isLoading}
-                    className="rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] disabled:opacity-50"
+                    className="from-primary-start to-primary-end rounded-xl bg-gradient-to-r disabled:opacity-50"
                   >
                     {isLoading ? (
                       <motion.div

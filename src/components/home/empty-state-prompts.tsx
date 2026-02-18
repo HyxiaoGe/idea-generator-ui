@@ -25,11 +25,11 @@ export function EmptyStatePrompts({
 }: EmptyStatePromptsProps) {
   return (
     <div className="border-border flex h-full flex-col items-center justify-center border-2 border-dashed p-8">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20">
+      <div className="from-primary-start/20 to-primary-end/20 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br">
         {contentType === "image" ? (
-          <Sparkles className="h-8 w-8 text-[#7C3AED]" />
+          <Sparkles className="text-primary-start h-8 w-8" />
         ) : (
-          <Film className="h-8 w-8 text-[#7C3AED]" />
+          <Film className="text-primary-start h-8 w-8" />
         )}
       </div>
       <p className="text-text-secondary mb-6 text-center text-sm">生成结果将在此显示</p>
@@ -54,7 +54,7 @@ export function EmptyStatePrompts({
                   key={example.id}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => onPromptSelect(example.id, example.text)}
-                  className="group border-border bg-surface-elevated text-text-primary hover:bg-surface flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm transition-all hover:border-[#7C3AED] hover:shadow-lg hover:shadow-[#7C3AED]/20"
+                  className="group border-border bg-surface-elevated text-text-primary hover:bg-surface hover:border-primary-start hover:shadow-primary-start/20 flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm transition-all hover:shadow-lg"
                 >
                   <span className="text-xl">{example.emoji}</span>
                   <span className="flex-1 truncate">{example.text}</span>
@@ -73,8 +73,8 @@ export function EmptyStatePrompts({
                   <span
                     className={`block h-1.5 rounded-full transition-all ${
                       i === promptPage
-                        ? "w-4 bg-[#7C3AED]"
-                        : "w-1.5 bg-[#3F3F46] hover:bg-[#7C3AED]/50"
+                        ? "bg-primary-start w-4"
+                        : "bg-border hover:bg-primary-start/50 w-1.5"
                     }`}
                   />
                 </button>

@@ -57,7 +57,7 @@ export default function StylePage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-4">
+      <div className="border-warning/30 bg-warning/10 mb-6 rounded-2xl border p-4">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🚧</span>
           <div>
@@ -73,8 +73,8 @@ export default function StylePage() {
         <div className="border-border bg-surface rounded-2xl border p-6">
           <h3 className="text-text-primary mb-4 font-semibold">内容图</h3>
           {!contentImage ? (
-            <label className="border-border bg-background hover:bg-surface flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all hover:border-[#7C3AED]">
-              <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20 text-3xl">
+            <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
+              <div className="from-primary-start/20 to-primary-end/20 mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
                 🖼️
               </div>
               <p className="text-text-primary mb-1 text-sm font-medium">拖拽或点击上传</p>
@@ -103,7 +103,7 @@ export default function StylePage() {
         </div>
 
         <div className="flex items-center justify-center">
-          <div className="bg-surface flex h-12 w-12 items-center justify-center rounded-full text-[#7C3AED]">
+          <div className="bg-surface text-primary-start flex h-12 w-12 items-center justify-center rounded-full">
             →
           </div>
         </div>
@@ -111,8 +111,8 @@ export default function StylePage() {
         <div className="border-border bg-surface rounded-2xl border p-6">
           <h3 className="text-text-primary mb-4 font-semibold">风格参考</h3>
           {!styleImage ? (
-            <label className="border-border bg-background hover:bg-surface flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all hover:border-[#7C3AED]">
-              <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20 text-3xl">
+            <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
+              <div className="from-primary-start/20 to-primary-end/20 mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
                 🎨
               </div>
               <p className="text-text-primary mb-1 text-sm font-medium">拖拽或点击上传</p>
@@ -155,7 +155,7 @@ export default function StylePage() {
       <Button
         onClick={handleTransfer}
         disabled={!contentImage || !styleImage || state === "loading"}
-        className="mb-6 w-full rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-6 hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+        className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 mb-6 w-full rounded-xl bg-gradient-to-r py-6"
       >
         开始迁移
       </Button>

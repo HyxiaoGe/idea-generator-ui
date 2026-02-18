@@ -103,7 +103,7 @@ export function ProgressiveImage({
     <div
       ref={imgRef}
       className={cn(
-        "relative overflow-hidden bg-[#18181B]",
+        "bg-surface relative overflow-hidden",
         aspectRatioClasses[aspectRatio],
         className
       )}
@@ -115,10 +115,10 @@ export function ProgressiveImage({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#27272A]"
+            className="bg-surface-elevated absolute inset-0"
           >
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-[#3F3F46] to-transparent"
+              className="via-border absolute inset-0 bg-gradient-to-r from-transparent to-transparent"
               animate={{ x: ["-100%", "200%"] }}
               transition={{
                 duration: 1.5,
@@ -146,7 +146,7 @@ export function ProgressiveImage({
             )}
 
             {showLoader && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#09090B]/50 backdrop-blur-sm">
+              <div className="bg-background/50 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{
@@ -155,7 +155,7 @@ export function ProgressiveImage({
                     ease: "linear",
                   }}
                 >
-                  <Loader2 className={cn("text-[#7C3AED]", loaderSizes[loaderSize])} />
+                  <Loader2 className={cn("text-primary-start", loaderSizes[loaderSize])} />
                 </motion.div>
               </div>
             )}
@@ -184,13 +184,13 @@ export function ProgressiveImage({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#18181B]"
+            className="bg-surface absolute inset-0 flex flex-col items-center justify-center gap-3"
           >
             <ImageOff className="h-12 w-12 text-[#71717A]" />
             <p className="text-sm text-[#71717A]">图片加载失败</p>
             <button
               onClick={handleRetry}
-              className="flex items-center gap-2 rounded-lg bg-[#27272A] px-4 py-2 text-sm text-[#A1A1AA] transition-colors hover:bg-[#3F3F46] hover:text-[#FAFAFA]"
+              className="bg-surface-elevated text-text-secondary hover:bg-border hover:text-text-primary flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors"
             >
               <RefreshCw className="h-4 w-4" />
               重试

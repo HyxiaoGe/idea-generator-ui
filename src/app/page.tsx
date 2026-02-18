@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -74,12 +74,32 @@ function HomePageContent() {
   // Active generation based on contentType
   const activeGen = contentType === "image" ? imageGen : videoGen;
 
-  // Reset on contentType change
+  // Per-mode prompt draft refs
+  const imagePromptRef = useRef("");
+  const videoPromptRef = useRef("");
+  const prevContentTypeRef = useRef(contentType);
+
+  // Save/restore prompt drafts on contentType change
   useEffect(() => {
+    const prev = prevContentTypeRef.current;
+    prevContentTypeRef.current = contentType;
+
+    if (prev === contentType) return;
+
+    // Save current prompt to the mode we're leaving
+    if (prev === "image") {
+      imagePromptRef.current = prompt;
+    } else {
+      videoPromptRef.current = prompt;
+    }
+
+    // Restore from target mode's ref
+    const restored = contentType === "image" ? imagePromptRef.current : videoPromptRef.current;
+    setPrompt(restored);
+
     imageGen.reset();
     videoGen.reset();
     setSelectedImageIndex(0);
-    setPrompt("");
     setSelectedTemplateId(null);
   }, [contentType]); // eslint-disable-line react-hooks/exhaustive-deps
 

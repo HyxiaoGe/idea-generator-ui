@@ -52,7 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const performLogout = useCallback(() => {
     setToken(null);
     setUser(null);
-    sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("user");
     // Clear refresh token cookie via API route
     fetch("/api/auth/refresh", { method: "DELETE" }).catch(() => {});
@@ -64,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) throw new Error("Refresh failed");
       const data = await res.json();
       setToken(data.access_token);
-      sessionStorage.setItem("access_token", data.access_token);
       return data.access_token;
     } catch {
       throw new Error("Refresh failed");
@@ -97,43 +95,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Check sessionStorage first
-      const storedToken = sessionStorage.getItem("access_token");
-      if (storedToken) {
-        setToken(storedToken);
-        try {
-          // Verify token is still valid by fetching user
-          const tempClient = new ApiClient({
-            getToken: () => storedToken,
-          });
-          const me = await tempClient.getMe();
-          updateUser(me);
-        } catch {
-          // Token expired, try refresh
-          try {
-            const newToken = await handleRefresh();
-            const tempClient = new ApiClient({
-              getToken: () => newToken,
-            });
-            const me = await tempClient.getMe();
-            updateUser(me);
-          } catch {
-            performLogout();
-          }
-        }
-      } else {
-        // Try refresh from httpOnly cookie
-        try {
-          const newToken = await handleRefresh();
-          const tempClient = new ApiClient({
-            getToken: () => newToken,
-          });
-          const me = await tempClient.getMe();
-          updateUser(me);
-        } catch {
-          // Not logged in, that's fine
-          if (cachedUser) performLogout(); // clear stale cache
-        }
+      // Always refresh from httpOnly cookie
+      try {
+        const newToken = await handleRefresh();
+        const tempClient = new ApiClient({
+          getToken: () => newToken,
+        });
+        const me = await tempClient.getMe();
+        updateUser(me);
+      } catch {
+        // Not logged in, that's fine
+        if (cachedUser) performLogout(); // clear stale cache
       }
       setIsLoading(false);
     };
@@ -156,12 +128,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [performLogout]);
 
   // Expose a way to set token from callback page
-  const setAuthToken = useCallback((newToken: string, newUser: GitHubUser) => {
-    setToken(newToken);
-    setUser(newUser);
-    sessionStorage.setItem("access_token", newToken);
-    sessionStorage.setItem("user", JSON.stringify(newUser));
-  }, []);
+  const setAuthToken = useCallback(
+    (newToken: string, newUser: GitHubUser) => {
+      setToken(newToken);
+      updateUser(newUser);
+    },
+    [updateUser]
+  );
 
   return (
     <AuthContext.Provider

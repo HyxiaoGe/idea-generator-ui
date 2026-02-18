@@ -59,7 +59,7 @@ export function ImageParams({
         <div>
           <label className="text-text-secondary mb-2 block text-xs">分辨率</label>
           <Select value={resolution} onValueChange={onResolutionChange}>
-            <SelectTrigger className="border-border bg-surface-elevated h-9 rounded-xl text-sm focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20">
+            <SelectTrigger className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 h-9 rounded-xl text-sm focus:ring-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -73,7 +73,7 @@ export function ImageParams({
         <div>
           <label className="text-text-secondary mb-2 block text-xs">比例</label>
           <Select value={aspectRatio} onValueChange={(v) => onAspectRatioChange(v as AspectRatio)}>
-            <SelectTrigger className="border-border bg-surface-elevated h-9 rounded-xl text-sm focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20">
+            <SelectTrigger className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 h-9 rounded-xl text-sm focus:ring-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -89,7 +89,7 @@ export function ImageParams({
         <div>
           <label className="text-text-secondary mb-2 block text-xs">数量</label>
           <Select value={count.toString()} onValueChange={(v) => onCountChange(parseInt(v))}>
-            <SelectTrigger className="border-border bg-surface-elevated h-9 rounded-xl text-sm focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20">
+            <SelectTrigger className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 h-9 rounded-xl text-sm focus:ring-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -115,7 +115,7 @@ export function ImageParams({
               <span className="text-text-primary text-sm">🔍 搜索增强</span>
               {manualModel ? (
                 manualModel.includes("google") ? (
-                  <span className="rounded-md bg-[#10B981]/20 px-2 py-0.5 text-xs text-[#10B981]">
+                  <span className="bg-accent/20 text-accent rounded-md px-2 py-0.5 text-xs">
                     Gemini专属
                   </span>
                 ) : (
@@ -129,7 +129,7 @@ export function ImageParams({
               checked={searchGrounding}
               onCheckedChange={onSearchGroundingChange}
               disabled={manualModel != null && !manualModel.includes("google")}
-              className="data-[state=checked]:bg-[#10B981]"
+              className="data-[state=checked]:bg-accent"
             />
           </div>
         </div>

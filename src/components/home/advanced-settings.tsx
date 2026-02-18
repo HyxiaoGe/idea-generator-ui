@@ -53,12 +53,13 @@ export function AdvancedSettings({
                     value={seed}
                     onChange={(e) => onSeedChange(e.target.value)}
                     placeholder="留空随机生成"
-                    className="border-border bg-surface-elevated flex-1 rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                    className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 flex-1 rounded-xl focus:ring-2"
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={onRandomSeed}
+                    aria-label="随机种子"
                     className="border-border bg-surface-elevated rounded-xl"
                   >
                     <Dices className="h-4 w-4" />
@@ -77,7 +78,7 @@ export function AdvancedSettings({
                   max="20"
                   defaultValue="7.5"
                   step="0.5"
-                  className="bg-border h-2 w-full cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-[#7C3AED] [&::-webkit-slider-thumb]:to-[#2563EB]"
+                  className="bg-border [&::-webkit-slider-thumb]:from-primary-start [&::-webkit-slider-thumb]:to-primary-end h-2 w-full cursor-pointer appearance-none rounded-full [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r"
                 />
               </div>
 
@@ -87,7 +88,7 @@ export function AdvancedSettings({
                   placeholder="例如：模糊, 低质量, 变形, 水印..."
                   value={negativePrompt}
                   onChange={(e) => onNegativePromptChange(e.target.value)}
-                  className="border-border bg-surface-elevated min-h-[60px] resize-none rounded-xl focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                  className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 min-h-[60px] resize-none rounded-xl focus:ring-2"
                 />
               </div>
             </div>

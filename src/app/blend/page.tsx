@@ -64,7 +64,7 @@ export default function BlendPage() {
         <h1 className="text-text-primary text-2xl font-semibold">图像混合</h1>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-4">
+      <div className="border-warning/30 bg-warning/10 mb-6 rounded-2xl border p-4">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🚧</span>
           <div>
@@ -108,9 +108,9 @@ export default function BlendPage() {
           ))}
 
           {images.length < 6 && (
-            <label className="border-border bg-background hover:bg-surface flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all hover:border-[#7C3AED]">
-              <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20">
-                <Plus className="h-6 w-6 text-[#7C3AED]" />
+            <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
+              <div className="from-primary-start/20 to-primary-end/20 mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                <Plus className="text-primary-start h-6 w-6" />
               </div>
               <p className="text-text-secondary text-xs">添加图片</p>
               <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
@@ -119,9 +119,9 @@ export default function BlendPage() {
         </div>
 
         {images.length === 0 && (
-          <label className="border-border bg-background hover:bg-surface mt-4 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed py-12 transition-all hover:border-[#7C3AED]">
+          <label className="border-border bg-background hover:bg-surface hover:border-primary-start mt-4 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed py-12 transition-all">
             <div className="text-center">
-              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED]/20 to-[#2563EB]/20 text-3xl">
+              <div className="from-primary-start/20 to-primary-end/20 mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
                 🖼️
               </div>
               <p className="text-text-primary mb-1 text-sm font-medium">点击上传图片</p>
@@ -159,7 +159,7 @@ export default function BlendPage() {
       <Button
         onClick={handleBlend}
         disabled={images.length < 2 || state === "loading"}
-        className="mb-6 w-full rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-6 hover:from-[#7C3AED]/90 hover:to-[#2563EB]/90"
+        className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 mb-6 w-full rounded-xl bg-gradient-to-r py-6"
       >
         开始混合
       </Button>

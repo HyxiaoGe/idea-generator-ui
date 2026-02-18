@@ -77,11 +77,11 @@ export function ModelSelector({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex items-center justify-between rounded-xl border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3 py-2">
-              <span className="text-xs text-[#7C3AED]">已手动选择: {manualModelName}</span>
+            <div className="border-primary-start/30 bg-primary-start/10 flex items-center justify-between rounded-xl border px-3 py-2">
+              <span className="text-primary-start text-xs">已手动选择: {manualModelName}</span>
               <button
                 onClick={() => onManualModelChange(null)}
-                className="rounded-md p-0.5 text-[#7C3AED] hover:bg-[#7C3AED]/20"
+                className="text-primary-start hover:bg-primary-start/20 rounded-md p-0.5"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -102,22 +102,22 @@ export function ModelSelector({
                 "relative flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-center transition-all",
                 manualModel && "opacity-50",
                 isSelected
-                  ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-2 ring-[#7C3AED]/30"
-                  : "border-border bg-surface-elevated hover:border-[#7C3AED]/50"
+                  ? "border-primary-start bg-primary-start/10 ring-primary-start/30 ring-2"
+                  : "border-border bg-surface-elevated hover:border-primary-start/50"
               )}
             >
               <span className="text-lg">{preset.icon}</span>
               <span
                 className={cn(
                   "text-sm font-medium",
-                  isSelected ? "text-[#7C3AED]" : "text-text-primary"
+                  isSelected ? "text-primary-start" : "text-text-primary"
                 )}
               >
                 {preset.name_zh}
               </span>
               <span className="text-text-secondary text-xs">{preset.description_zh}</span>
               {preset.is_default && (
-                <span className="absolute -top-1.5 right-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-1.5 py-0 text-[10px] font-medium text-white">
+                <span className="from-primary-start to-primary-end absolute -top-1.5 right-2 rounded-full bg-gradient-to-r px-1.5 py-0 text-[10px] font-medium text-white">
                   推荐
                 </span>
               )}
@@ -170,14 +170,16 @@ export function ModelSelector({
                               key={value}
                               className={cn(
                                 "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors",
-                                isSelected ? "bg-[#7C3AED]/10" : "hover:bg-surface-elevated"
+                                isSelected ? "bg-primary-start/10" : "hover:bg-surface-elevated"
                               )}
                             >
                               <RadioGroupItem value={value} />
                               <span
                                 className={cn(
                                   "flex-1 text-sm",
-                                  isSelected ? "font-medium text-[#7C3AED]" : "text-text-primary"
+                                  isSelected
+                                    ? "text-primary-start font-medium"
+                                    : "text-text-primary"
                                 )}
                               >
                                 {m.name}
@@ -188,17 +190,17 @@ export function ModelSelector({
                                     className={cn(
                                       "rounded-md px-1.5 py-0.5 text-[10px]",
                                       m.tier === "premium"
-                                        ? "bg-[#F59E0B]/20 text-[#F59E0B]"
+                                        ? "bg-warning/20 text-warning"
                                         : m.tier === "standard"
-                                          ? "bg-[#10B981]/20 text-[#10B981]"
-                                          : "text-text-secondary bg-[#3F3F46]"
+                                          ? "bg-accent/20 text-accent"
+                                          : "text-text-secondary bg-border"
                                     )}
                                   >
                                     {m.tier}
                                   </span>
                                 )}
                                 {m.speed && (
-                                  <span className="text-text-secondary rounded-md bg-[#3F3F46] px-1.5 py-0.5 text-[10px]">
+                                  <span className="text-text-secondary bg-border rounded-md px-1.5 py-0.5 text-[10px]">
                                     {m.speed}
                                   </span>
                                 )}
