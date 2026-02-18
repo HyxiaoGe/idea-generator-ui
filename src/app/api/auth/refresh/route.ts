@@ -4,22 +4,26 @@ const API_BASE = process.env.API_BASE_URL || "http://localhost:8888/api";
 
 export async function POST(request: NextRequest) {
   try {
-    const refreshToken = request.cookies.get("refresh_token")?.value;
+    const authToken = request.cookies.get("auth_token")?.value;
 
-    if (!refreshToken) {
-      return NextResponse.json({ detail: "No refresh token" }, { status: 401 });
+    if (!authToken) {
+      return NextResponse.json({ detail: "No auth token" }, { status: 401 });
     }
 
+    // The backend's /auth/refresh expects a valid JWT as Bearer token,
+    // not a refresh token in the body. It returns a new JWT.
     const backendRes = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
     });
 
     if (!backendRes.ok) {
       const response = NextResponse.json({ detail: "Refresh failed" }, { status: 401 });
-      // Clear invalid refresh token
-      response.cookies.delete("refresh_token");
+      // Clear invalid auth token
+      response.cookies.delete("auth_token");
       return response;
     }
 
@@ -29,14 +33,14 @@ export async function POST(request: NextRequest) {
       access_token: data.access_token,
     });
 
-    // Update refresh token cookie if a new one is provided
-    if (data.refresh_token) {
-      response.cookies.set("refresh_token", data.refresh_token, {
+    // Update the cookie with the new token
+    if (data.access_token) {
+      response.cookies.set("auth_token", data.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: 7 * 24 * 60 * 60, // 7 days
       });
     }
 
@@ -49,6 +53,6 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE() {
   const response = NextResponse.json({ ok: true });
-  response.cookies.delete("refresh_token");
+  response.cookies.delete("auth_token");
   return response;
 }
