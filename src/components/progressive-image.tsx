@@ -72,6 +72,11 @@ export function ProgressiveImage({
   useEffect(() => {
     if (!shouldLoad) return;
 
+    if (!src) {
+      setLoadingState("error");
+      return;
+    }
+
     setLoadingState("loading");
 
     const img = new Image();

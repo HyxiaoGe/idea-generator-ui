@@ -212,11 +212,17 @@ export default function TemplatesPage() {
             className="group border-border bg-surface hover:border-primary-start hover:shadow-primary-start/30 overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl"
           >
             <div className="bg-background relative aspect-video overflow-hidden">
-              <img
-                src={getImageUrl(template.preview_image_url)}
-                alt={getTemplateDisplayName(template, lang)}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
+              {getImageUrl(template.preview_image_url) ? (
+                <img
+                  src={getImageUrl(template.preview_image_url)}
+                  alt={getTemplateDisplayName(template, lang)}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              ) : (
+                <div className="bg-surface-secondary flex h-full w-full items-center justify-center">
+                  <span className="text-text-secondary text-sm">暂无预览</span>
+                </div>
+              )}
 
               {template.use_count > 10000 && (
                 <div className="from-warning to-destructive absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-gradient-to-r px-2 py-1 backdrop-blur-sm">
