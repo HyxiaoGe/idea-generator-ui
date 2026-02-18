@@ -31,9 +31,7 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
   const [taskId, setTaskId] = useState<string | null>(null);
 
   const onCompleteRef = useRef(options?.onComplete);
-  useEffect(() => {
-    onCompleteRef.current = options?.onComplete;
-  });
+  onCompleteRef.current = options?.onComplete;
 
   // Fetch video providers from API
   const { data: videoProvidersData } = useSWR<{ providers: ProviderInfo[] }>(

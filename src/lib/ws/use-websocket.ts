@@ -17,9 +17,7 @@ export function useWebSocket(
   const { ws } = useWebSocketContext();
 
   const handlerRef = useRef(handler);
-  useEffect(() => {
-    handlerRef.current = handler;
-  });
+  handlerRef.current = handler;
 
   useEffect(() => {
     if (!ws) return;
@@ -43,9 +41,7 @@ export function useWebSocketAll(handler: (message: WSMessage) => void): { isConn
   const { ws } = useWebSocketContext();
 
   const handlerRef = useRef(handler);
-  useEffect(() => {
-    handlerRef.current = handler;
-  });
+  handlerRef.current = handler;
 
   useEffect(() => {
     if (!ws) return;

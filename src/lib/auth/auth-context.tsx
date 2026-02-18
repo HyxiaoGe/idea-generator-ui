@@ -30,9 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Refs to avoid recreating ApiClient on every render
   const tokenRef = useRef(token);
-  useEffect(() => {
-    tokenRef.current = token;
-  });
+  tokenRef.current = token;
 
   const onUnauthorizedRef = useRef<() => void>(() => {});
 
@@ -73,14 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Keep onUnauthorized ref current
-  useEffect(() => {
-    onUnauthorizedRef.current = () => {
-      handleRefresh().catch(() => {
-        performLogout();
-      });
-    };
-  }, [handleRefresh, performLogout]);
+  // Keep onUnauthorized ref current — assign during render for concurrent mode safety
+  onUnauthorizedRef.current = () => {
+    handleRefresh().catch(() => {
+      performLogout();
+    });
+  };
 
   // Helper: update user state and persist to sessionStorage
   const updateUser = useCallback((me: GitHubUser) => {

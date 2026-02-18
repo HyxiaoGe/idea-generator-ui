@@ -29,13 +29,12 @@ export function useTaskProgress(
   const [results, setResults] = useState<GeneratedImage[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
 
-  // Refs for callbacks to avoid stale closures
+  // Refs for callbacks — assign during render to stay current in concurrent mode
   const onCompleteRef = useRef(options?.onComplete);
+  onCompleteRef.current = options?.onComplete;
+
   const onFailedRef = useRef(options?.onFailed);
-  useEffect(() => {
-    onCompleteRef.current = options?.onComplete;
-    onFailedRef.current = options?.onFailed;
-  });
+  onFailedRef.current = options?.onFailed;
 
   const isFinishedRef = useRef(false);
   const startTimeRef = useRef(0);
@@ -76,6 +75,18 @@ export function useTaskProgress(
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
+    // One-shot fetch for current state (no chaining)
+    const fetchOnce = async () => {
+      if (cancelled || isFinishedRef.current) return;
+      try {
+        const tp = await getApiClient().getTaskProgress(taskId);
+        if (!cancelled) applyProgress(tp);
+      } catch {
+        // fetch error — WS will deliver updates
+      }
+    };
+
+    // Recurring poll: fetches then schedules the next one
     const poll = async () => {
       if (cancelled || isFinishedRef.current) return;
       try {
@@ -112,8 +123,8 @@ export function useTaskProgress(
           applyProgress(data);
         }
       });
-      // Do one initial poll to get current state (WS may have missed events)
-      poll();
+      // One initial fetch to get current state (WS may have missed events)
+      fetchOnce();
     } else {
       // No WS — pure polling fallback
       poll();

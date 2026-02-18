@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { getApiClient } from "@/lib/api-client";
 import { useTaskProgress } from "./use-task-progress";
@@ -39,9 +39,7 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
   const [batchTaskId, setBatchTaskId] = useState<string | null>(null);
 
   const onCompleteRef = useRef(options?.onComplete);
-  useEffect(() => {
-    onCompleteRef.current = options?.onComplete;
-  });
+  onCompleteRef.current = options?.onComplete;
 
   // Use WebSocket-first task progress for batch generation
   const batchProgress = useTaskProgress(batchTaskId, {
