@@ -80,24 +80,26 @@ export function PreviewPanel({
 
         {count > 1 && state === "result" && generatedImages.length > 1 && (
           <div className="border-border bg-background flex w-24 flex-col gap-2 border-l p-2">
-            {generatedImages.map((img, index) => (
-              <motion.button
-                key={index}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => onImageSelect(index)}
-                className={`overflow-hidden rounded-lg transition-all ${
-                  selectedImageIndex === index
-                    ? "shadow-primary-start/50 ring-primary-start shadow-lg ring-2"
-                    : "ring-border hover:ring-text-secondary ring-1"
-                }`}
-              >
-                <img
-                  src={img.url}
-                  alt={`Result ${index + 1}`}
-                  className="aspect-square w-full object-cover"
-                />
-              </motion.button>
-            ))}
+            {generatedImages
+              .filter((img) => img.url)
+              .map((img, index) => (
+                <motion.button
+                  key={index}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => onImageSelect(index)}
+                  className={`overflow-hidden rounded-lg transition-all ${
+                    selectedImageIndex === index
+                      ? "shadow-primary-start/50 ring-primary-start shadow-lg ring-2"
+                      : "ring-border hover:ring-text-secondary ring-1"
+                  }`}
+                >
+                  <img
+                    src={img.url}
+                    alt={`Result ${index + 1}`}
+                    className="aspect-square w-full object-cover"
+                  />
+                </motion.button>
+              ))}
           </div>
         )}
       </div>

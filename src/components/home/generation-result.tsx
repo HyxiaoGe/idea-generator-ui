@@ -61,9 +61,8 @@ export function GenerationResult({
     );
   }
 
-  if (generatedImages.length === 0) return null;
-
   const img = generatedImages[selectedImageIndex];
+  if (!img?.url) return null;
   const hasMetadata = img.provider || img.model || img.duration || img.width;
 
   return (

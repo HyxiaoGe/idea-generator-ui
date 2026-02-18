@@ -196,13 +196,13 @@ export default function ImageToVideoPage() {
                       controls
                       muted={isMuted}
                     />
-                  ) : (
+                  ) : uploadedImage ? (
                     <img
-                      src={uploadedImage || ""}
+                      src={uploadedImage}
                       alt="Video result"
                       className="h-full w-full object-cover"
                     />
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Action Buttons */}
