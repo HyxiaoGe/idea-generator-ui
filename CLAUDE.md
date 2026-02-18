@@ -10,7 +10,7 @@ AI Image Video Generator (AI创作工坊) - A Next.js 15 web UI for AI image and
 
 The frontend connects to a FastAPI backend (Nano Banana Lab) for:
 
-- **Authentication**: GitHub OAuth via Next.js API Routes (token exchange) + direct API calls
+- **Authentication**: OAuth via standalone auth-service (port 8100), tokens stored in localStorage
 - **Image/Video Generation**: Real API calls to `/api/generate`, `/api/generate/batch`, `/api/video/generate`
 - **Chat**: Multi-turn sessions via `/api/chat`
 - **History/Favorites/Templates**: CRUD via REST API
@@ -60,15 +60,10 @@ Next.js 15 App Router with file-based routing. Pages under `src/app/`:
 - `/gallery` — Masonry gallery with filtering (real API)
 - `/templates` — Template library (real API with hardcoded fallback)
 - `/settings` — Account, API keys, quota, documentation (real API)
-- `/login` — GitHub OAuth login page
-- `/auth/callback` — OAuth callback handler
+- `/login` — OAuth login page
+- `/auth/callback` — OAuth callback handler (exchanges code for tokens via auth-service)
 - `/generating-demo` — Generation animation demos (accessible via double-click on logo)
 - `/design-system`, `/components`, `/pages-overview` — Internal design reference pages
-
-API Routes (server-side):
-
-- `/api/auth/callback` — Exchanges OAuth code for tokens, sets httpOnly refresh cookie
-- `/api/auth/refresh` — Refreshes access token using httpOnly refresh cookie
 
 Query parameters are used for state on the home page (e.g., `/?type=image&prompt=...`).
 
@@ -77,7 +72,7 @@ Query parameters are used for state on the home page (e.g., `/?type=image&prompt
 `src/app/layout.tsx` wraps all pages with (outermost → innermost):
 
 - `ThemeProvider` (next-themes + custom animation context)
-- `AuthProvider` (GitHub OAuth, token management, user state)
+- `AuthProvider` (OAuth via auth-service, localStorage token management, auto-refresh)
 - `SWRProvider` (SWR global config with auth-aware fetcher)
 - `QuotaProvider` (real-time quota from `/api/quota`)
 - `WebSocketProvider` (auto-connects when authenticated)
@@ -89,7 +84,6 @@ Query parameters are used for state on the home page (e.g., `/?type=image&prompt
 ```
 src/
 ├── app/                        # Next.js route segments (pages)
-│   ├── api/auth/               # Server-side API routes (OAuth token exchange, refresh)
 │   ├── auth/callback/          # OAuth callback page
 │   └── login/                  # Login page
 ├── components/
@@ -99,14 +93,15 @@ src/
 │   ├── theme/                  # ThemeProvider + animated transitions
 │   └── skeletons/              # Loading skeleton components
 ├── lib/
-│   ├── types.ts                # All API TypeScript types
-│   ├── api-client.ts           # ApiClient singleton (all backend calls)
+│   ├── types.ts                # All API TypeScript types (UserInfo, TokenResponse, etc.)
+│   ├── api-client.ts           # ApiClient singleton (all backend calls, 401 auto-retry)
 │   ├── swr-config.tsx          # SWR global provider + auth-aware fetcher
 │   ├── transforms.ts           # Data transforms (time, mode names, provider mapping, URLs)
 │   ├── utils.ts                # cn() utility (clsx + tailwind-merge)
 │   ├── auth/
-│   │   ├── auth-context.tsx    # AuthProvider (user, token, login/logout)
-│   │   └── require-auth.tsx    # Route protection wrapper component
+│   │   ├── auth-client.ts     # Auth-service API (OAuth redirect, token exchange/refresh/revoke, userinfo)
+│   │   ├── auth-context.tsx   # AuthProvider (localStorage tokens, auto-refresh, concurrent debounce)
+│   │   └── require-auth.tsx   # Route protection wrapper component
 │   ├── quota/
 │   │   └── quota-context.tsx   # QuotaProvider (SWR-based, checkBeforeGenerate)
 │   └── ws/
@@ -123,23 +118,28 @@ src/
 Copy `.env.example` to `.env.local`:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8888/api   # Backend API base
+NEXT_PUBLIC_API_BASE_URL=/api                        # Backend API base (proxied through Next.js rewrites)
 NEXT_PUBLIC_WS_URL=ws://localhost:8888/api/ws        # WebSocket endpoint
-NEXT_PUBLIC_GITHUB_CLIENT_ID=<github-client-id>      # GitHub OAuth app
+NEXT_PUBLIC_AUTH_URL=http://localhost:8100            # Auth-service base URL
+NEXT_PUBLIC_AUTH_CLIENT_ID=app_xxx                   # Auth-service client ID
 ```
 
 ### Authentication Flow
 
-1. User clicks login → `GET /api/auth/login` → redirect to GitHub
-2. GitHub redirects to `/auth/callback?code=...&state=...`
-3. Callback page calls Next.js API Route `POST /api/auth/callback`
-4. API Route exchanges code with backend, sets `refresh_token` as httpOnly cookie, returns `access_token`
-5. `access_token` stored in React state + `sessionStorage`; `refresh_token` only in httpOnly cookie
-6. On page reload, `AuthProvider` tries `sessionStorage` → `getMe()`, falls back to cookie refresh
+Auth is handled by a standalone auth-service (port 8100), not the main backend.
+
+1. User clicks login → redirect to `AUTH_URL/auth/oauth/github?client_id=...&redirect_uri=...`
+2. Auth-service redirects to GitHub → user authorizes → auth-service callback generates one-time code
+3. Auth-service redirects to `/auth/callback?code=...`
+4. Callback page calls `POST AUTH_URL/auth/oauth/token` to exchange code for tokens
+5. `access_token` (15min) + `refresh_token` (30d, rotation) stored in `localStorage`
+6. On page reload, `AuthProvider` reads `localStorage` → refreshes if expiring soon → fetches `GET AUTH_URL/auth/userinfo`
+7. Proactive refresh via `setTimeout` 60s before expiry; concurrent requests share one in-flight refresh promise
+8. `ApiClient.request()` auto-retries once on 401 after triggering refresh
 
 ### API Client
 
-`src/lib/api-client.ts` provides a singleton `ApiClient` class. Get it via `getApiClient()`. It auto-injects `Authorization` headers and supports `X-Provider`/`X-Model` headers for provider routing. All pages use this client for backend calls.
+`src/lib/api-client.ts` provides a singleton `ApiClient` class. Get it via `getApiClient()`. It auto-injects `Authorization` headers, supports `X-Provider`/`X-Model` headers for provider routing, and automatically retries on 401 (after token refresh). All pages use this client for backend calls. Auth-specific requests (token exchange, refresh, revoke, userinfo) go through `src/lib/auth/auth-client.ts` directly to auth-service, not through `ApiClient`.
 
 ### Legacy Code
 
