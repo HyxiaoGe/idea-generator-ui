@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("user");
     // Clear refresh token cookie via API route
     fetch("/api/auth/refresh", { method: "DELETE" }).catch(() => {});
   }, []);
@@ -57,9 +58,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Helper: update user state and persist to sessionStorage
+  const updateUser = useCallback((me: GitHubUser) => {
+    setUser(me);
+    sessionStorage.setItem("user", JSON.stringify(me));
+  }, []);
+
   // On mount: try to restore session
   useEffect(() => {
     const init = async () => {
+      // Restore cached user immediately (avoids avatar flash)
+      const cachedUser = sessionStorage.getItem("user");
+      if (cachedUser) {
+        try {
+          setUser(JSON.parse(cachedUser));
+        } catch {
+          sessionStorage.removeItem("user");
+        }
+      }
+
       // Check sessionStorage first
       const storedToken = sessionStorage.getItem("access_token");
       if (storedToken) {
@@ -70,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             getToken: () => storedToken,
           });
           const me = await tempClient.getMe();
-          setUser(me);
+          updateUser(me);
         } catch {
           // Token expired, try refresh
           try {
@@ -79,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               getToken: () => newToken,
             });
             const me = await tempClient.getMe();
-            setUser(me);
+            updateUser(me);
           } catch {
             performLogout();
           }
@@ -92,9 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             getToken: () => newToken,
           });
           const me = await tempClient.getMe();
-          setUser(me);
+          updateUser(me);
         } catch {
           // Not logged in, that's fine
+          if (cachedUser) performLogout(); // clear stale cache
         }
       }
       setIsLoading(false);
@@ -122,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     setUser(newUser);
     sessionStorage.setItem("access_token", newToken);
+    sessionStorage.setItem("user", JSON.stringify(newUser));
   }, []);
 
   return (
