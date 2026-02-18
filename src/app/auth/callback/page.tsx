@@ -3,54 +3,33 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthSetter } from "@/lib/auth/auth-context";
+import { exchangeCode } from "@/lib/auth/auth-client";
 import { toast } from "sonner";
 
 function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setAuthToken } = useAuthSetter();
+  const { setAuthTokens } = useAuthSetter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("code");
-    const state = searchParams.get("state");
 
-    if (!code || !state) {
+    if (!code) {
       setError("缺少授权参数");
       return;
     }
 
-    // Verify state matches
-    const savedState = sessionStorage.getItem("oauth_state");
-    if (savedState && savedState !== state) {
-      setError("授权状态不匹配，请重新登录");
-      return;
-    }
-
-    // Exchange code for token via our API route
-    fetch("/api/auth/callback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, state }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.detail || "登录失败");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        // Store token and user
-        setAuthToken(data.access_token, data.user);
-        sessionStorage.removeItem("oauth_state");
+    exchangeCode(code)
+      .then(async (tokens) => {
+        await setAuthTokens(tokens);
         toast.success("登录成功！");
         router.replace("/");
       })
       .catch((err) => {
         setError(err.message || "登录失败，请重试");
       });
-  }, [searchParams, setAuthToken, router]);
+  }, [searchParams, setAuthTokens, router]);
 
   if (error) {
     return (

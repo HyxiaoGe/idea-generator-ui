@@ -25,19 +25,19 @@ export interface PaginatedResponse<T> {
 
 // ===== Auth =====
 
-export interface GitHubUser {
+export interface UserInfo {
   id: string;
-  login: string;
-  name?: string;
-  email?: string;
+  email: string;
+  name: string;
   avatar_url?: string;
-  user_folder_id: string;
+  is_superuser: boolean;
 }
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token: string;
   token_type: "bearer";
-  user: GitHubUser;
+  expires_in: number;
 }
 
 export interface APIKeyInfo {

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
-import { ImageIcon, LogIn } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { motion } from "motion/react";
 
 export default function LoginPage() {
@@ -39,7 +39,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-text-primary mb-2 text-2xl font-semibold">AI 创作工坊</h1>
-          <p className="text-text-secondary mb-8 text-sm">使用 GitHub 账号登录，开始 AI 创作之旅</p>
+          <p className="text-text-secondary mb-8 text-sm">登录账号，开始 AI 创作之旅</p>
 
           <Button
             onClick={login}

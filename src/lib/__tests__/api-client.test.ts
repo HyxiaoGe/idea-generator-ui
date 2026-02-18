@@ -50,10 +50,10 @@ describe("ApiClient", () => {
   it("sends Authorization header when token is present", async () => {
     mockFetch({ ok: true, status: 200, json: () => Promise.resolve({ data: 1 }) });
 
-    await client.getMe();
+    await client.get("/quota");
 
     expect(fetch).toHaveBeenCalledWith(
-      "https://api.test.com/auth/me",
+      "https://api.test.com/quota",
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer test-token",
@@ -66,7 +66,7 @@ describe("ApiClient", () => {
     mockToken = null;
     mockFetch({ ok: true, status: 200, json: () => Promise.resolve({}) });
 
-    await client.getMe();
+    await client.get("/quota");
 
     const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
     expect(callHeaders).not.toHaveProperty("Authorization");
@@ -79,21 +79,45 @@ describe("ApiClient", () => {
       json: () => Promise.resolve({ detail: "server broke" }),
     });
 
-    await expect(client.getMe()).rejects.toThrow(ApiError);
-    await expect(client.getMe()).rejects.toMatchObject({
+    await expect(client.get("/quota")).rejects.toThrow(ApiError);
+    await expect(client.get("/quota")).rejects.toMatchObject({
       status: 500,
       message: "server broke",
     });
   });
 
-  it("calls onUnauthorized on 401", async () => {
-    mockFetch({
+  it("calls onUnauthorized and retries on 401", async () => {
+    const failResponse = {
       ok: false,
       status: 401,
       json: () => Promise.resolve({}),
-    });
+      headers: new Headers(),
+    } as Response;
+    const successResponse = {
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data: "ok" }),
+      headers: new Headers(),
+    } as Response;
 
-    await expect(client.getMe()).rejects.toThrow(ApiError);
+    vi.mocked(fetch).mockResolvedValueOnce(failResponse).mockResolvedValueOnce(successResponse);
+
+    const result = await client.get("/quota");
+    expect(onUnauthorized).toHaveBeenCalled();
+    expect(result).toEqual({ data: "ok" });
+  });
+
+  it("throws ApiError on 401 after retry", async () => {
+    const failResponse = {
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({}),
+      headers: new Headers(),
+    } as Response;
+
+    vi.mocked(fetch).mockResolvedValueOnce(failResponse).mockResolvedValueOnce(failResponse);
+
+    await expect(client.get("/quota")).rejects.toThrow(ApiError);
     expect(onUnauthorized).toHaveBeenCalled();
   });
 

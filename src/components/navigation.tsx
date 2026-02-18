@@ -36,7 +36,7 @@ export function Navigation() {
   const { theme, toggleThemeWithAnimation } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const { user, isAuthenticated, login, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, login, logout } = useAuth();
   const { quota: quotaData } = useQuota();
 
   const contentType = (searchParams.get("type") as "image" | "video") || "image";
@@ -401,11 +401,11 @@ export function Navigation() {
                       <AvatarImage
                         src={
                           user.avatar_url ||
-                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.login}`
+                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`
                         }
                       />
                       <AvatarFallback className="from-primary-start to-primary-end bg-gradient-to-br text-white">
-                        {(user.name || user.login || "U").charAt(0).toUpperCase()}
+                        {(user.name || user.email || "U").charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </motion.button>
@@ -416,7 +416,7 @@ export function Navigation() {
                 >
                   <DropdownMenuLabel className="text-text-primary">
                     <div className="flex flex-col">
-                      <span>{user.name || user.login}</span>
+                      <span>{user.name || user.email}</span>
                       {user.email && (
                         <span className="text-text-secondary text-xs font-normal">
                           {user.email}
@@ -456,6 +456,9 @@ export function Navigation() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : authLoading ? (
+              /* Skeleton while checking auth */
+              <div className="bg-surface-secondary h-9 w-9 animate-pulse rounded-full" />
             ) : (
               /* Login Button */
               <Button

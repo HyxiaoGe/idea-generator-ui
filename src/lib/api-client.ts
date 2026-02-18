@@ -1,6 +1,4 @@
 import type {
-  TokenResponse,
-  GitHubUser,
   GenerateImageRequest,
   GenerateImageResponse,
   BatchGenerateRequest,
@@ -41,11 +39,6 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions {
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
-}
-
 export interface CancelTaskResponse {
   success: boolean;
   task_id: string;
@@ -57,12 +50,12 @@ export interface CancelTaskResponse {
 export class ApiClient {
   private baseUrl: string;
   private getToken: () => string | null;
-  private onUnauthorized: () => void;
+  private onUnauthorized: () => void | Promise<void>;
 
   constructor(config: {
     baseUrl?: string;
     getToken: () => string | null;
-    onUnauthorized?: () => void;
+    onUnauthorized?: () => void | Promise<void>;
   }) {
     this.baseUrl =
       config.baseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api";
@@ -77,7 +70,8 @@ export class ApiClient {
       body?: unknown;
       headers?: Record<string, string>;
       signal?: AbortSignal;
-    }
+    },
+    _isRetry = false
   ): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {
@@ -96,8 +90,12 @@ export class ApiClient {
       signal: options?.signal,
     });
 
+    if (response.status === 401 && !_isRetry) {
+      await this.onUnauthorized();
+      return this.request(method, path, options, true);
+    }
+
     if (response.status === 401) {
-      this.onUnauthorized();
       throw new ApiError(401, "Unauthorized");
     }
 
@@ -141,28 +139,6 @@ export class ApiClient {
   // Public GET for SWR fetcher
   async get<T = unknown>(path: string): Promise<T> {
     return this.request("GET", path);
-  }
-
-  // ===== Auth =====
-
-  async getLoginUrl(): Promise<{ url: string; state: string }> {
-    return this.request("GET", "/auth/login");
-  }
-
-  async authCallback(code: string, state: string): Promise<TokenResponse> {
-    return this.request("POST", "/auth/callback", {
-      body: { code, state },
-    });
-  }
-
-  async refreshToken(refreshToken: string): Promise<{ access_token: string; expires_in: number }> {
-    return this.request("POST", "/auth/refresh", {
-      body: { refresh_token: refreshToken },
-    });
-  }
-
-  async getMe(): Promise<GitHubUser> {
-    return this.request("GET", "/auth/me");
   }
 
   // ===== Generation =====

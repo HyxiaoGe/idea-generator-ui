@@ -45,7 +45,7 @@ export function RequireAuth({ children, fallback }: RequireAuthProps) {
           className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r px-8 py-3"
         >
           <LogIn className="mr-2 h-4 w-4" />
-          使用 GitHub 登录
+          登录
         </Button>
       </div>
     );

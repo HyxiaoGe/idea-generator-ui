@@ -32,8 +32,6 @@ const nextConfig: NextConfig = {
     return [
       {
         // Proxy all /api/* requests to the backend.
-        // Next.js file-based API routes (/api/auth/callback, /api/auth/refresh)
-        // take priority and are NOT proxied.
         source: "/api/:path*",
         destination: `${BACKEND_API_URL}/:path*`,
       },

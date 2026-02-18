@@ -199,7 +199,7 @@ export default function SettingsPage() {
                 <AvatarImage
                   src={
                     user?.avatar_url ||
-                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.login || "default"}`
+                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || "default"}`
                   }
                 />
                 <AvatarFallback className="from-primary-start to-primary-end bg-gradient-to-br">
@@ -208,17 +208,17 @@ export default function SettingsPage() {
               </Avatar>
               <div className="flex-1">
                 <p className="text-text-primary text-lg font-semibold">
-                  {user?.name || user?.login || "用户"}
+                  {user?.name || user?.email || "用户"}
                 </p>
                 {user?.email && <p className="text-text-secondary text-sm">{user.email}</p>}
-                <p className="text-text-secondary mt-1 text-xs">GitHub: @{user?.login}</p>
+                <p className="text-text-secondary mt-1 text-xs">{user?.email}</p>
               </div>
             </div>
 
             <div className="border-border flex justify-between border-t pt-6">
               <div>
                 <p className="text-text-secondary text-sm">登录方式</p>
-                <p className="text-text-primary text-sm font-medium">GitHub OAuth</p>
+                <p className="text-text-primary text-sm font-medium">OAuth</p>
               </div>
               <Button
                 variant="outline"
