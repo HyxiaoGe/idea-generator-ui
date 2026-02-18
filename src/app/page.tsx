@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ProgressiveImage } from "@/components/progressive-image";
 import { RecentGenerationsSkeleton } from "@/components/skeletons";
+import { ModelSelector } from "@/components/model-selector";
 import useSWR from "swr";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuota } from "@/lib/quota/quota-context";
@@ -41,6 +42,7 @@ import type {
   ProviderInfo,
   GenerateImageResponse,
   AspectRatio,
+  QualityPreset,
   TemplateListItem,
   GetPreferencesResponse,
 } from "@/lib/types";
@@ -59,6 +61,7 @@ interface GeneratedImageInfo {
   url: string;
   provider?: string;
   model?: string;
+  model_display_name?: string;
   duration?: number;
   mode?: string;
   settings?: { aspect_ratio: string; resolution: string };
@@ -97,7 +100,8 @@ function HomePageContent() {
   const [searchGrounding, setSearchGrounding] = useState(false);
   const [count, setCount] = useState(1);
   const [seed, setSeed] = useState("");
-  const [model, setModel] = useState("");
+  const [qualityPreset, setQualityPreset] = useState<QualityPreset>("balanced");
+  const [manualModel, setManualModel] = useState<string | null>(null);
   const [resolution, setResolution] = useState("1k");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [negativePrompt, setNegativePrompt] = useState("");
@@ -117,25 +121,11 @@ function HomePageContent() {
   const [videoAspectRatio, setVideoAspectRatio] = useState<AspectRatio>("16:9");
   const [videoMotionStrength, setVideoMotionStrength] = useState("medium");
 
-  // Fetch image providers from API
-  const { data: providersData } = useSWR<{ providers: ProviderInfo[] }>(
-    isAuthenticated ? "/generate/providers" : null
-  );
-  const providers = providersData?.providers;
-
   // Fetch video providers from API
   const { data: videoProvidersData } = useSWR<{ providers: ProviderInfo[] }>(
     isAuthenticated ? "/video/providers" : null
   );
   const videoProviders = videoProvidersData?.providers;
-
-  // Set default model from providers when they load
-  useEffect(() => {
-    if (providers?.length && !model) {
-      const first = providers[0];
-      setModel(`${first.name}:${first.models[0].id}`);
-    }
-  }, [providers, model]);
 
   useEffect(() => {
     if (videoProviders?.length && !videoModel) {
@@ -244,9 +234,10 @@ function HomePageContent() {
     setProgress(0);
 
     const api = getApiClient();
-    const { provider, model: modelName } = getProviderAndModel(
-      contentType === "video" ? videoModel : model
-    );
+
+    // Video always uses manual model selection; image uses preset or manual
+    const videoSelection = getProviderAndModel(videoModel);
+    const imageManualSelection = manualModel ? getProviderAndModel(manualModel) : null;
 
     try {
       if (contentType === "video") {
@@ -261,8 +252,8 @@ function HomePageContent() {
               safety_level: "moderate",
             },
           },
-          provider,
-          modelName
+          videoSelection.provider,
+          videoSelection.model
         );
 
         // Poll for video task progress
@@ -311,20 +302,23 @@ function HomePageContent() {
       if (count > 1) {
         // Batch generation
         const prompts = Array(count).fill(prompt);
-        const result = await api.batchGenerate(
-          {
-            prompts,
-            template_id: selectedTemplateId || undefined,
-            settings: {
-              aspect_ratio: aspectRatio,
-              resolution: mapResolution(resolution),
-              safety_level: "moderate",
-            },
-            enhance_prompt: enhancePrompt || undefined,
+        const batchBody = {
+          prompts,
+          template_id: selectedTemplateId || undefined,
+          settings: {
+            aspect_ratio: aspectRatio,
+            resolution: mapResolution(resolution),
+            safety_level: "moderate" as const,
           },
-          provider,
-          modelName
-        );
+          enhance_prompt: enhancePrompt || undefined,
+        };
+        const result = imageManualSelection
+          ? await api.batchGenerate(
+              batchBody,
+              imageManualSelection.provider,
+              imageManualSelection.model
+            )
+          : await api.batchGenerate({ ...batchBody, quality_preset: qualityPreset });
 
         // Poll for batch progress
         const pollInterval = setInterval(async () => {
@@ -374,20 +368,20 @@ function HomePageContent() {
           ? api.generateWithSearch.bind(api)
           : api.generateImage.bind(api);
 
-        const result: GenerateImageResponse = await generateFn(
-          {
-            prompt,
-            template_id: selectedTemplateId || undefined,
-            settings: {
-              aspect_ratio: aspectRatio,
-              resolution: mapResolution(resolution),
-              safety_level: "moderate",
-            },
-            enhance_prompt: enhancePrompt || undefined,
+        const singleBody = {
+          prompt,
+          template_id: selectedTemplateId || undefined,
+          settings: {
+            aspect_ratio: aspectRatio,
+            resolution: mapResolution(resolution),
+            safety_level: "moderate" as const,
           },
-          provider,
-          modelName
-        );
+          enhance_prompt: enhancePrompt || undefined,
+        };
+
+        const result: GenerateImageResponse = imageManualSelection
+          ? await generateFn(singleBody, imageManualSelection.provider, imageManualSelection.model)
+          : await generateFn({ ...singleBody, quality_preset: qualityPreset });
 
         setProgress(100);
         const imageUrl = getImageUrl(result.image.url || result.image.key);
@@ -396,6 +390,7 @@ function HomePageContent() {
             url: imageUrl,
             provider: result.provider,
             model: result.model,
+            model_display_name: result.model_display_name,
             duration: result.duration,
             mode: result.mode,
             settings: result.settings
@@ -437,7 +432,8 @@ function HomePageContent() {
     isAuthenticated,
     checkBeforeGenerate,
     contentType,
-    model,
+    qualityPreset,
+    manualModel,
     videoModel,
     count,
     searchGrounding,
@@ -468,14 +464,6 @@ function HomePageContent() {
     setSelectedTemplateId(templateId);
     toast.info("已选择模板");
   };
-
-  // Build model options from providers
-  const imageModelOptions = (providers || []).flatMap((p) =>
-    p.models.map((m) => ({
-      value: `${p.name}:${m.id}`,
-      label: `${p.display_name} ${m.name}`,
-    }))
-  );
 
   const videoModelOptions = (videoProviders || []).flatMap((p) =>
     p.models.map((m) => ({
@@ -667,10 +655,12 @@ function HomePageContent() {
                     const hasMetadata = img.provider || img.model || img.duration || img.width;
                     return hasMetadata ? (
                       <div className="absolute bottom-6 left-6 flex flex-col gap-1.5">
-                        {(img.provider || img.model) && (
+                        {(img.model_display_name || img.provider || img.model) && (
                           <div className="flex items-center gap-1.5">
                             <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white backdrop-blur">
-                              {[img.provider, img.model].filter(Boolean).join(" · ")}
+                              {img.model_display_name
+                                ? `由 ${img.model_display_name} 生成`
+                                : [img.provider, img.model].filter(Boolean).join(" · ")}
                             </span>
                           </div>
                         )}
@@ -834,23 +824,18 @@ function HomePageContent() {
       <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
         {contentType === "image" ? (
           <>
-            <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-6">
-              <div>
-                <label className="text-text-secondary mb-2 block text-xs">模型</label>
-                <Select value={model} onValueChange={setModel}>
-                  <SelectTrigger className="border-border bg-surface-elevated h-9 rounded-xl text-sm focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {imageModelOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="mb-4">
+              <label className="text-text-secondary mb-2 block text-xs">模型</label>
+              <ModelSelector
+                qualityPreset={qualityPreset}
+                onPresetChange={setQualityPreset}
+                manualModel={manualModel}
+                onManualModelChange={setManualModel}
+                isAuthenticated={isAuthenticated}
+              />
+            </div>
 
+            <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
               <div>
                 <label className="text-text-secondary mb-2 block text-xs">分辨率</label>
                 <Select value={resolution} onValueChange={setResolution}>
@@ -899,25 +884,33 @@ function HomePageContent() {
               <div className="col-span-2 flex items-end">
                 <div
                   className={`flex w-full items-center justify-between rounded-xl px-3 py-2 ${
-                    model === "gemini" || model.includes("google")
+                    manualModel?.includes("google")
                       ? "border-border bg-surface-elevated border"
-                      : "border-border bg-surface border border-dashed opacity-50"
+                      : !manualModel
+                        ? "border-border bg-surface-elevated border"
+                        : "border-border bg-surface border border-dashed opacity-50"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-text-primary text-sm">🔍 搜索增强</span>
-                    {model === "gemini" || model.includes("google") ? (
-                      <span className="rounded-md bg-[#10B981]/20 px-2 py-0.5 text-xs text-[#10B981]">
-                        Gemini专属
-                      </span>
+                    {manualModel ? (
+                      manualModel.includes("google") ? (
+                        <span className="rounded-md bg-[#10B981]/20 px-2 py-0.5 text-xs text-[#10B981]">
+                          Gemini专属
+                        </span>
+                      ) : (
+                        <span className="text-text-secondary text-xs">当前模型不支持</span>
+                      )
                     ) : (
-                      <span className="text-text-secondary text-xs">当前模型不支持</span>
+                      <span className="text-text-secondary text-xs">
+                        预设模式下自动选择支持的模型
+                      </span>
                     )}
                   </div>
                   <Switch
                     checked={searchGrounding}
                     onCheckedChange={setSearchGrounding}
-                    disabled={model !== "gemini" && !model.includes("google")}
+                    disabled={manualModel != null && !manualModel.includes("google")}
                     className="data-[state=checked]:bg-[#10B981]"
                   />
                 </div>

@@ -25,6 +25,7 @@ import type {
   TemplateDetailResponse,
   TemplateCategoryInfo,
   ToggleResponse,
+  ModelsResponse,
 } from "./types";
 
 export class ApiError extends Error {
@@ -175,6 +176,10 @@ export class ApiClient {
 
   async getProviders(): Promise<ProviderInfo[]> {
     return this.request("GET", "/generate/providers");
+  }
+
+  async getModels(): Promise<ModelsResponse> {
+    return this.request("GET", "/models");
   }
 
   // ===== Video =====

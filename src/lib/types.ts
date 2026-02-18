@@ -4,6 +4,7 @@ export type AspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4";
 export type Resolution = "1K" | "2K" | "4K";
 export type SafetyLevel = "strict" | "moderate" | "relaxed" | "none";
 export type GenerationMode = "basic" | "chat" | "batch" | "blend" | "style" | "search";
+export type QualityPreset = "premium" | "balanced" | "fast";
 export type HealthStatus = "healthy" | "degraded" | "unhealthy";
 
 // ===== Generic =====
@@ -65,6 +66,7 @@ export interface GenerateImageRequest {
   enhance_prompt?: boolean;
   generate_negative?: boolean;
   template_id?: string;
+  quality_preset?: QualityPreset;
 }
 
 export interface GeneratedImage {
@@ -88,6 +90,9 @@ export interface GenerateImageResponse {
   created_at: string;
   provider?: string;
   model?: string;
+  model_used?: string;
+  model_display_name?: string;
+  quality_preset?: string;
   search_sources?: string;
 }
 
@@ -98,6 +103,7 @@ export interface BatchGenerateRequest {
   settings?: Partial<GenerationSettings>;
   enhance_prompt?: boolean;
   template_id?: string;
+  quality_preset?: QualityPreset;
 }
 
 export interface BatchGenerateResponse {
@@ -406,4 +412,32 @@ export interface TemplateCategoryInfo {
 export interface ToggleResponse {
   action: "added" | "removed";
   count: number;
+}
+
+// ===== Models / Quality Presets =====
+
+export interface ModelInfo {
+  id: string;
+  name: string;
+  provider: string;
+  provider_display_name: string;
+  tier: string;
+  arena_rank: number | null;
+  pricing_per_image: number;
+  speed: string;
+  strengths: string[];
+}
+
+export interface PresetInfo {
+  id: QualityPreset;
+  name_zh: string;
+  name_en: string;
+  description_zh: string;
+  icon: string;
+  is_default?: boolean;
+}
+
+export interface ModelsResponse {
+  presets: PresetInfo[];
+  models: ModelInfo[];
 }
