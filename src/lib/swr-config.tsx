@@ -2,7 +2,7 @@
 
 import { SWRConfig, type Cache } from "swr";
 import { ReactNode, useCallback, useRef } from "react";
-import { ApiError } from "./api-client";
+import { ApiError, getApiClient } from "./api-client";
 
 const CACHE_KEY = "swr-cache";
 
@@ -34,21 +34,8 @@ function localStorageProvider(): Cache<any> {
   return map as Cache;
 }
 
-function swrFetcher(path: string) {
-  return fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8888/api"}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(typeof window !== "undefined" && sessionStorage.getItem("access_token")
-        ? { Authorization: `Bearer ${sessionStorage.getItem("access_token")}` }
-        : {}),
-    },
-  }).then(async (res) => {
-    if (!res.ok) {
-      const error = new ApiError(res.status, `HTTP ${res.status}`);
-      throw error;
-    }
-    return res.json();
-  });
+async function swrFetcher(path: string) {
+  return getApiClient().get(path);
 }
 
 export function SWRProvider({ children }: { children: ReactNode }) {

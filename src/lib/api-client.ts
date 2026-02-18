@@ -113,6 +113,11 @@ export class ApiClient {
     return response.json();
   }
 
+  // Public GET for SWR fetcher
+  async get<T = unknown>(path: string): Promise<T> {
+    return this.request("GET", path);
+  }
+
   // ===== Auth =====
 
   async getLoginUrl(): Promise<{ url: string; state: string }> {
