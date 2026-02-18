@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react";
 import { ApiClient, setApiClient } from "@/lib/api-client";
 import type { GitHubUser } from "@/lib/types";
 
@@ -20,21 +28,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Create and register the API client
-  const apiClient = new ApiClient({
-    getToken: () => token,
-    onUnauthorized: () => {
-      // Try to refresh, or logout
-      handleRefresh().catch(() => {
-        performLogout();
-      });
-    },
+  // Refs to avoid recreating ApiClient on every render
+  const tokenRef = useRef(token);
+  useEffect(() => {
+    tokenRef.current = token;
   });
 
-  // Register as global singleton
+  const onUnauthorizedRef = useRef<() => void>(() => {});
+
+  // Create ApiClient once via useRef — reads token/callback through refs
+  const apiClientRef = useRef<ApiClient | null>(null);
+  if (!apiClientRef.current) {
+    apiClientRef.current = new ApiClient({
+      getToken: () => tokenRef.current,
+      onUnauthorized: () => onUnauthorizedRef.current(),
+    });
+  }
+  const apiClient = apiClientRef.current;
+
+  // Register as global singleton once
   useEffect(() => {
     setApiClient(apiClient);
-  }, [token]); // Re-register when token changes
+  }, [apiClient]);
 
   const performLogout = useCallback(() => {
     setToken(null);
@@ -57,6 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Refresh failed");
     }
   }, []);
+
+  // Keep onUnauthorized ref current
+  useEffect(() => {
+    onUnauthorizedRef.current = () => {
+      handleRefresh().catch(() => {
+        performLogout();
+      });
+    };
+  }, [handleRefresh, performLogout]);
 
   // Helper: update user state and persist to sessionStorage
   const updateUser = useCallback((me: GitHubUser) => {

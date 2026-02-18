@@ -64,6 +64,18 @@ export default function BlendPage() {
         <h1 className="text-text-primary text-2xl font-semibold">图像混合</h1>
       </div>
 
+      <div className="mb-6 rounded-2xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-4">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🚧</span>
+          <div>
+            <h3 className="text-text-primary font-semibold">功能开发中</h3>
+            <p className="text-text-secondary text-sm">
+              图像混合功能正在开发中，当前为演示模式，生成结果为示例图片。
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-text-primary font-semibold">上传图片（{images.length}/6）</h3>

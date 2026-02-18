@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { WebSocketClient } from "./websocket-client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
@@ -13,21 +13,16 @@ const WSContext = createContext<WSContextType>({ ws: null });
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAuth();
-  const wsRef = useRef<WebSocketClient | null>(null);
+  const [wsClient, setWsClient] = useState<WebSocketClient | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
-      // Disconnect if we were connected
-      wsRef.current?.disconnect();
-      wsRef.current = null;
       return;
     }
 
     const ws = new WebSocketClient({
       getToken: () => token,
     });
-
-    wsRef.current = ws;
 
     // Register global handlers
     const unsubQuota = ws.on("quota_warning", (msg) => {
@@ -45,16 +40,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     ws.connect();
+    setWsClient(ws);
 
     return () => {
       unsubQuota();
       unsubComplete();
       ws.disconnect();
-      wsRef.current = null;
+      setWsClient(null);
     };
   }, [isAuthenticated, token]);
 
-  return <WSContext.Provider value={{ ws: wsRef.current }}>{children}</WSContext.Provider>;
+  return <WSContext.Provider value={{ ws: wsClient }}>{children}</WSContext.Provider>;
 }
 
 export function useWebSocketContext(): WSContextType {

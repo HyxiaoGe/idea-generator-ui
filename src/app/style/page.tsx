@@ -57,6 +57,18 @@ export default function StylePage() {
         </div>
       </div>
 
+      <div className="mb-6 rounded-2xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-4">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🚧</span>
+          <div>
+            <h3 className="text-text-primary font-semibold">功能开发中</h3>
+            <p className="text-text-secondary text-sm">
+              风格迁移功能正在开发中，当前为演示模式，生成结果为示例图片。
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-6 grid gap-6 md:grid-cols-[1fr,auto,1fr]">
         <div className="border-border bg-surface rounded-2xl border p-6">
           <h3 className="text-text-primary mb-4 font-semibold">内容图</h3>

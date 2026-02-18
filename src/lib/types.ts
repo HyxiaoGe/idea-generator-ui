@@ -414,6 +414,22 @@ export interface ToggleResponse {
   count: number;
 }
 
+// ===== Generated Image Info (homepage display) =====
+
+export interface GeneratedImageInfo {
+  url: string;
+  provider?: string;
+  model?: string;
+  model_display_name?: string;
+  duration?: number;
+  mode?: string;
+  settings?: { aspect_ratio: string; resolution: string };
+  processed_prompt?: string;
+  width?: number;
+  height?: number;
+  created_at?: string;
+}
+
 // ===== Models / Quality Presets =====
 
 export interface ModelInfo {

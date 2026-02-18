@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useWebSocketContext } from "./ws-provider";
 import type { WSMessageType, WSMessage } from "./websocket-client";
 
@@ -16,15 +16,20 @@ export function useWebSocket(
 ): { isConnected: boolean } {
   const { ws } = useWebSocketContext();
 
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
+
   useEffect(() => {
     if (!ws) return;
 
     const unsubscribe = ws.on(type, (msg: WSMessage) => {
-      handler(msg.data);
+      handlerRef.current(msg.data);
     });
 
     return unsubscribe;
-  }, [ws, type, handler]);
+  }, [ws, type]);
 
   return {
     isConnected: ws?.isConnected ?? false,
@@ -37,13 +42,20 @@ export function useWebSocket(
 export function useWebSocketAll(handler: (message: WSMessage) => void): { isConnected: boolean } {
   const { ws } = useWebSocketContext();
 
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
+
   useEffect(() => {
     if (!ws) return;
 
-    const unsubscribe = ws.onAny(handler);
+    const unsubscribe = ws.onAny((msg: WSMessage) => {
+      handlerRef.current(msg);
+    });
 
     return unsubscribe;
-  }, [ws, handler]);
+  }, [ws]);
 
   return {
     isConnected: ws?.isConnected ?? false,
