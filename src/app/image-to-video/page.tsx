@@ -30,6 +30,7 @@ import useSWR from "swr";
 import { RequireAuth } from "@/lib/auth/require-auth";
 import { useAuth } from "@/lib/auth/auth-context";
 import { getApiClient } from "@/lib/api-client";
+import { showErrorToast } from "@/lib/error-toast";
 import { getProviderAndModel, getImageUrl } from "@/lib/transforms";
 import { useQuota } from "@/lib/quota/quota-context";
 import type { ProviderInfo } from "@/lib/types";
@@ -155,8 +156,7 @@ export default function ImageToVideoPage() {
     } catch (error) {
       setState("idle");
       setProgress(0);
-      const message = error instanceof Error ? error.message : "生成失败";
-      toast.error("生成失败", { description: message });
+      showErrorToast(error, "生成失败");
     }
   }, [uploadedImage, model, motionDescription, checkBeforeGenerate, refreshQuota]);
 

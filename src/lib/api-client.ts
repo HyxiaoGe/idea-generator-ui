@@ -32,7 +32,9 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
-    public detail?: unknown
+    public detail?: unknown,
+    public errorCode?: string,
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "ApiError";
@@ -42,6 +44,14 @@ export class ApiError extends Error {
 interface RequestOptions {
   headers?: Record<string, string>;
   signal?: AbortSignal;
+}
+
+export interface CancelTaskResponse {
+  success: boolean;
+  task_id: string;
+  status: string;
+  quota_refunded: boolean;
+  refunded_count: number;
 }
 
 export class ApiClient {
@@ -98,11 +108,26 @@ export class ApiClient {
       } catch {
         // response body not JSON
       }
-      const message =
-        detail && typeof detail === "object" && "detail" in detail
-          ? String((detail as { detail: unknown }).detail)
-          : `HTTP ${response.status}`;
-      throw new ApiError(response.status, message, detail);
+
+      let message = `HTTP ${response.status}`;
+      let errorCode: string | undefined;
+      let details: Record<string, unknown> | undefined;
+
+      if (detail && typeof detail === "object") {
+        const obj = detail as Record<string, unknown>;
+        if (obj.error && typeof obj.error === "object") {
+          // New format: { success: false, error: { code, message, details } }
+          const err = obj.error as Record<string, unknown>;
+          message = String(err.message || message);
+          errorCode = err.code as string | undefined;
+          details = err.details as Record<string, unknown> | undefined;
+        } else if ("detail" in obj) {
+          // Old format: { detail: "..." }
+          message = String(obj.detail);
+        }
+      }
+
+      throw new ApiError(response.status, message, detail, errorCode, details);
     }
 
     // Handle 204 No Content
@@ -145,38 +170,45 @@ export class ApiClient {
   async generateImage(
     req: GenerateImageRequest,
     provider?: string,
-    model?: string
+    model?: string,
+    signal?: AbortSignal
   ): Promise<GenerateImageResponse> {
     const headers: Record<string, string> = {};
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;
-    return this.request("POST", "/generate", { body: req, headers });
+    return this.request("POST", "/generate", { body: req, headers, signal });
   }
 
   async generateWithSearch(
     req: GenerateImageRequest,
     provider?: string,
-    model?: string
+    model?: string,
+    signal?: AbortSignal
   ): Promise<GenerateImageResponse> {
     const headers: Record<string, string> = {};
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;
-    return this.request("POST", "/generate/search", { body: req, headers });
+    return this.request("POST", "/generate/search", { body: req, headers, signal });
   }
 
   async batchGenerate(
     req: BatchGenerateRequest,
     provider?: string,
-    model?: string
+    model?: string,
+    signal?: AbortSignal
   ): Promise<BatchGenerateResponse> {
     const headers: Record<string, string> = {};
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;
-    return this.request("POST", "/generate/batch", { body: req, headers });
+    return this.request("POST", "/generate/batch", { body: req, headers, signal });
   }
 
   async getTaskProgress(taskId: string): Promise<TaskProgress> {
     return this.request("GET", `/generate/task/${taskId}`);
+  }
+
+  async cancelTask(taskId: string): Promise<CancelTaskResponse> {
+    return this.request("POST", `/tasks/${taskId}/cancel`);
   }
 
   async getProviders(): Promise<ProviderInfo[]> {
@@ -192,12 +224,13 @@ export class ApiClient {
   async generateVideo(
     req: GenerateImageRequest,
     provider?: string,
-    model?: string
+    model?: string,
+    signal?: AbortSignal
   ): Promise<BatchGenerateResponse> {
     const headers: Record<string, string> = {};
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;
-    return this.request("POST", "/video/generate", { body: req, headers });
+    return this.request("POST", "/video/generate", { body: req, headers, signal });
   }
 
   // ===== Chat =====

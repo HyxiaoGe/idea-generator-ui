@@ -1,4 +1,9 @@
-export type WSMessageType = "task_progress" | "generation_complete" | "quota_warning";
+export type WSMessageType =
+  | "task_progress"
+  | "generation_complete"
+  | "quota_warning"
+  | "ping"
+  | "pong";
 
 export interface WSMessage {
   type: WSMessageType;
@@ -18,6 +23,9 @@ export class WebSocketClient {
   private reconnectDelay = 1000;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private isIntentionallyClosed = false;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private pongCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private lastPongTime = 0;
 
   constructor(config: { url?: string; getToken: () => string | null }) {
     this.url = config.url || process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8888/api/ws";
@@ -38,11 +46,16 @@ export class WebSocketClient {
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
+        this.startHeartbeat();
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message: WSMessage = JSON.parse(event.data);
+          if (message.type === "pong") {
+            this.lastPongTime = Date.now();
+            return;
+          }
           this.dispatch(message);
         } catch {
           // Invalid message format
@@ -50,6 +63,7 @@ export class WebSocketClient {
       };
 
       this.ws.onclose = () => {
+        this.stopHeartbeat();
         if (!this.isIntentionallyClosed) {
           this.attemptReconnect();
         }
@@ -65,6 +79,7 @@ export class WebSocketClient {
 
   disconnect(): void {
     this.isIntentionallyClosed = true;
+    this.stopHeartbeat();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -116,5 +131,36 @@ export class WebSocketClient {
     this.reconnectTimer = setTimeout(() => {
       this.connect();
     }, this.reconnectDelay);
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.lastPongTime = Date.now();
+
+    // Send ping every 30s
+    this.heartbeatTimer = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 30_000);
+
+    // Check pong freshness every 5s — if no pong in 45s (missed 1.5 ping cycles), force reconnect
+    this.pongCheckTimer = setInterval(() => {
+      if (Date.now() - this.lastPongTime > 45_000) {
+        this.stopHeartbeat();
+        this.ws?.close();
+      }
+    }, 5_000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.pongCheckTimer) {
+      clearInterval(this.pongCheckTimer);
+      this.pongCheckTimer = null;
+    }
   }
 }

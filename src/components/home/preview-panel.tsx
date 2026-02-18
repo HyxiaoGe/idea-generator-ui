@@ -22,6 +22,8 @@ interface PreviewPanelProps {
   onImageSelect: (index: number) => void;
   onDownload: () => void;
   onEnlarge: () => void;
+  onCancel?: () => void;
+  showCancel?: boolean;
 }
 
 export function PreviewPanel({
@@ -40,6 +42,8 @@ export function PreviewPanel({
   onImageSelect,
   onDownload,
   onEnlarge,
+  onCancel,
+  showCancel,
 }: PreviewPanelProps) {
   return (
     <div className="border-border bg-surface mb-6 overflow-hidden rounded-2xl border">
@@ -68,6 +72,8 @@ export function PreviewPanel({
               selectedImageIndex={selectedImageIndex}
               onDownload={onDownload}
               onEnlarge={onEnlarge}
+              onCancel={onCancel}
+              showCancel={showCancel}
             />
           )}
         </div>

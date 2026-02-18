@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { getApiClient } from "@/lib/api-client";
+import { showErrorToast } from "@/lib/error-toast";
 import { useTaskProgress } from "./use-task-progress";
 import type { AspectRatio, ProviderInfo, GeneratedImageInfo, GeneratedImage } from "@/lib/types";
 import { getProviderAndModel, mapResolution, getImageUrl } from "@/lib/transforms";
@@ -115,12 +116,30 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
         setState("empty");
         setIsGenerating(false);
         setProgress(0);
-        const message = error instanceof Error ? error.message : "生成失败，请重试";
-        toast.error("生成失败", { description: message });
+        showErrorToast(error, "生成失败");
       }
     },
     [videoModel, videoAspectRatio, videoResolution]
   );
+
+  const cancel = useCallback(async () => {
+    if (!taskId) return;
+    const api = getApiClient();
+    try {
+      const result = await api.cancelTask(taskId);
+      if (result.refunded_count > 0) {
+        toast.info("已取消生成", { description: `已退还 ${result.refunded_count} 次配额` });
+      } else {
+        toast.info("已取消生成");
+      }
+    } catch {
+      toast.info("已取消生成");
+    }
+    setState("empty");
+    setIsGenerating(false);
+    setProgress(0);
+    setTaskId(null);
+  }, [taskId]);
 
   const reset = useCallback(() => {
     setState("empty");
@@ -151,6 +170,7 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
     isGenerating,
     // Actions
     generate,
+    cancel,
     reset,
   };
 }

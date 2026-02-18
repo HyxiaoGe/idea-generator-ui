@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Download, Maximize2 } from "lucide-react";
+import { Sparkles, Download, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "motion/react";
@@ -14,6 +14,8 @@ interface GenerationResultProps {
   selectedImageIndex: number;
   onDownload: () => void;
   onEnlarge: () => void;
+  onCancel?: () => void;
+  showCancel?: boolean;
 }
 
 export function GenerationResult({
@@ -24,6 +26,8 @@ export function GenerationResult({
   selectedImageIndex,
   onDownload,
   onEnlarge,
+  onCancel,
+  showCancel,
 }: GenerationResultProps) {
   if (state === "generating") {
     return (
@@ -42,6 +46,17 @@ export function GenerationResult({
         <div className="w-full max-w-md">
           <Progress value={progress} className="h-2" />
         </div>
+        {onCancel && showCancel && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            className="text-text-secondary hover:text-destructive mt-4"
+          >
+            <X className="mr-1 h-4 w-4" />
+            取消生成
+          </Button>
+        )}
       </div>
     );
   }

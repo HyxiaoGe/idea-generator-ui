@@ -263,6 +263,8 @@ function HomePageContent() {
           link.click();
         }}
         onEnlarge={() => setLightboxOpen(true)}
+        onCancel={activeGen.cancel}
+        showCancel={activeGen.isGenerating && (contentType === "video" || imageGen.count > 1)}
       />
 
       {/* Prompt Input */}

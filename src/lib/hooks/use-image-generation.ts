@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { getApiClient } from "@/lib/api-client";
+import { showErrorToast } from "@/lib/error-toast";
 import { useTaskProgress } from "./use-task-progress";
 import type {
   AspectRatio,
@@ -37,6 +38,9 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
 
   // Batch task tracking
   const [batchTaskId, setBatchTaskId] = useState<string | null>(null);
+
+  // Abort controller for single-image cancellation
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const onCompleteRef = useRef(options?.onComplete);
   onCompleteRef.current = options?.onComplete;
@@ -107,6 +111,9 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
           // Single image generation
           setProgress(20);
 
+          const controller = new AbortController();
+          abortControllerRef.current = controller;
+
           const generateFn = searchGrounding
             ? api.generateWithSearch.bind(api)
             : api.generateImage.bind(api);
@@ -126,9 +133,15 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
             ? await generateFn(
                 singleBody,
                 imageManualSelection.provider,
-                imageManualSelection.model
+                imageManualSelection.model,
+                controller.signal
               )
-            : await generateFn({ ...singleBody, quality_preset: qualityPreset });
+            : await generateFn(
+                { ...singleBody, quality_preset: qualityPreset },
+                undefined,
+                undefined,
+                controller.signal
+              );
 
           setProgress(100);
           const imageUrl = getImageUrl(result.image.url || result.image.key);
@@ -165,15 +178,41 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
           }
         }
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
         setState("empty");
         setIsGenerating(false);
         setProgress(0);
-        const message = error instanceof Error ? error.message : "生成失败，请重试";
-        toast.error("生成失败", { description: message });
+        showErrorToast(error, "生成失败");
       }
     },
     [count, manualModel, qualityPreset, searchGrounding, enhancePrompt, aspectRatio, resolution]
   );
+
+  const cancel = useCallback(async () => {
+    const api = getApiClient();
+
+    // Cancel batch task via API
+    if (batchTaskId) {
+      try {
+        const result = await api.cancelTask(batchTaskId);
+        if (result.refunded_count > 0) {
+          toast.info("已取消生成", { description: `已退还 ${result.refunded_count} 次配额` });
+        } else {
+          toast.info("已取消生成");
+        }
+      } catch {
+        toast.info("已取消生成");
+      }
+    }
+
+    // Abort in-flight single-image fetch
+    abortControllerRef.current?.abort();
+
+    setState("empty");
+    setIsGenerating(false);
+    setProgress(0);
+    setBatchTaskId(null);
+  }, [batchTaskId]);
 
   const reset = useCallback(() => {
     setState("empty");
@@ -214,6 +253,7 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
     isGenerating,
     // Actions
     generate,
+    cancel,
     reset,
   };
 }
