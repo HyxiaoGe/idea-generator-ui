@@ -369,7 +369,7 @@ export function Navigation() {
 
           {/* Quota Progress + Avatar (or Login button) */}
           <div className="flex items-center gap-3 pl-2">
-            {isAuthenticated && quotaData && (
+            {mounted && isAuthenticated && quotaData && (
               /* Quota Indicator */
               <div>
                 <div className="group relative">
@@ -388,7 +388,10 @@ export function Navigation() {
               </div>
             )}
 
-            {isAuthenticated && user ? (
+            {!mounted || authLoading ? (
+              /* Skeleton while SSR or checking auth */
+              <div className="bg-surface-secondary h-9 w-9 animate-pulse rounded-full" />
+            ) : isAuthenticated && user ? (
               /* User Avatar Dropdown */
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -456,9 +459,6 @@ export function Navigation() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : authLoading ? (
-              /* Skeleton while checking auth */
-              <div className="bg-surface-secondary h-9 w-9 animate-pulse rounded-full" />
             ) : (
               /* Login Button */
               <Button
