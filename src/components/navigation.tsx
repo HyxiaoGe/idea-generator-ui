@@ -441,29 +441,6 @@ export function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-border" />
-
-                  <DropdownMenuItem
-                    className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
-                    onClick={() => handleNavigate("/gallery")}
-                  >
-                    <Folder className="mr-2 h-4 w-4" />
-                    {t("nav.gallery")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
-                    onClick={() => handleNavigate("/templates")}
-                  >
-                    <BookTemplate className="mr-2 h-4 w-4" />
-                    {t("nav.templates")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
-                    onClick={() => handleNavigate("/settings")}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    {t("nav.settings")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-border" />
                   <DropdownMenuItem
                     className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-400"
                     onClick={handleLogout}

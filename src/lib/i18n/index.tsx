@@ -98,7 +98,10 @@ function detectLanguage(): Language {
 // ===== Provider =====
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>(detectLanguage);
+  // Always initialize with "zh-CN" to match server render and avoid hydration mismatch.
+  // The real language is applied in a useEffect after hydration.
+  const [language, setLanguage] = useState<Language>("zh-CN");
+  const [hydrated, setHydrated] = useState(false);
   const { isAuthenticated } = useAuth();
 
   // Share cache key with settings page
@@ -106,8 +109,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     isAuthenticated ? "/preferences" : null
   );
 
-  // Sync from API preferences
+  // After hydration, apply the detected language from localStorage / browser
   useEffect(() => {
+    const detected = detectLanguage();
+    if (detected !== "zh-CN") {
+      setLanguage(detected);
+    }
+    setHydrated(true);
+  }, []);
+
+  // Sync from API preferences (only after hydration to avoid overriding with stale data)
+  useEffect(() => {
+    if (!hydrated) return;
     if (prefsData?.preferences?.ui?.language) {
       const apiLang = prefsData.preferences.ui.language;
       if (apiLang !== language) {
@@ -115,9 +128,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(STORAGE_KEY, apiLang);
       }
     }
-    // Only run when prefsData changes, not language
+    // Only run when prefsData or hydrated changes, not language
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefsData]);
+  }, [prefsData, hydrated]);
 
   // Sync module-level getter and document lang attribute
   useEffect(() => {
