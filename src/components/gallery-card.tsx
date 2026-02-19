@@ -11,6 +11,7 @@ import {
   getImageUrl,
   inferContentType,
 } from "@/lib/transforms";
+import { useTranslation } from "@/lib/i18n";
 
 interface GalleryCardProps {
   item: HistoryItem;
@@ -33,6 +34,7 @@ export function GalleryCard({
   onDownload,
   onReuse,
 }: GalleryCardProps) {
+  const { t } = useTranslation();
   const [isVideoHovered, setIsVideoHovered] = useState(false);
   const isVideo = inferContentType(item.filename) === "video";
 
@@ -67,7 +69,7 @@ export function GalleryCard({
             <div className="absolute top-3 right-3 rounded-lg bg-black/60 px-2 py-1 backdrop-blur-sm">
               <div className="flex items-center gap-1">
                 <Play className="h-3 w-3 text-white" fill="white" />
-                <span className="text-xs text-white">视频</span>
+                <span className="text-xs text-white">{t("common.video")}</span>
               </div>
             </div>
           </>
@@ -93,7 +95,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
-              aria-label={item.favorite ? "取消收藏" : "收藏"}
+              aria-label={item.favorite ? t("lightbox.unfavorite") : t("lightbox.favorite")}
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-black/60 active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
@@ -107,7 +109,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
-              aria-label="下载"
+              aria-label={t("lightbox.download")}
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-black/60"
               onClick={(e) => {
                 e.stopPropagation();
@@ -119,7 +121,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
-              aria-label="重新使用"
+              aria-label={t("lightbox.regenerate")}
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-black/60"
               onClick={(e) => {
                 e.stopPropagation();
@@ -131,7 +133,7 @@ export function GalleryCard({
             <Button
               size="sm"
               variant="secondary"
-              aria-label="删除"
+              aria-label={t("lightbox.delete")}
               className="flex-1 border-white/20 bg-black/40 text-white backdrop-blur-xl hover:bg-red-500/80"
               onClick={(e) => {
                 e.stopPropagation();

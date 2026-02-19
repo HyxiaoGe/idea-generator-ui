@@ -1,8 +1,10 @@
+import { getTranslations, interpolate } from "@/lib/i18n";
+
 /**
- * Format an ISO timestamp to a relative time string in Chinese.
- * e.g. "2小时前", "3天前", "刚刚"
+ * Format an ISO timestamp to a locale-aware relative time string.
  */
 export function formatRelativeTime(isoString: string): string {
+  const t = getTranslations();
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -11,29 +13,30 @@ export function formatRelativeTime(isoString: string): string {
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSeconds < 60) return "刚刚";
-  if (diffMinutes < 60) return `${diffMinutes}分钟前`;
-  if (diffHours < 24) return `${diffHours}小时前`;
-  if (diffDays < 30) return `${diffDays}天前`;
+  if (diffSeconds < 60) return t.time.justNow;
+  if (diffMinutes < 60) return interpolate(t.time.minutesAgo, { n: diffMinutes });
+  if (diffHours < 24) return interpolate(t.time.hoursAgo, { n: diffHours });
+  if (diffDays < 30) return interpolate(t.time.daysAgo, { n: diffDays });
 
   const diffMonths = Math.floor(diffDays / 30);
-  if (diffMonths < 12) return `${diffMonths}个月前`;
+  if (diffMonths < 12) return interpolate(t.time.monthsAgo, { n: diffMonths });
 
   const diffYears = Math.floor(diffDays / 365);
-  return `${diffYears}年前`;
+  return interpolate(t.time.yearsAgo, { n: diffYears });
 }
 
 /**
- * Map backend generation mode to Chinese display name.
+ * Map backend generation mode to locale-aware display name.
  */
 export function getModeDisplayName(mode: string): string {
+  const t = getTranslations();
   const modeMap: Record<string, string> = {
-    basic: "基础",
-    chat: "对话",
-    batch: "批量",
-    blend: "混合",
-    style: "风格迁移",
-    search: "搜索增强",
+    basic: t.modeNames.basic,
+    chat: t.modeNames.chat,
+    batch: t.modeNames.batch,
+    blend: t.modeNames.blend,
+    style: t.modeNames.style,
+    search: t.modeNames.search,
   };
   return modeMap[mode] || mode;
 }

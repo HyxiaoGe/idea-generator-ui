@@ -4,6 +4,7 @@ import { Sparkles, BookOpen, Wand2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "motion/react";
+import { useTranslation } from "@/lib/i18n";
 
 interface PromptInputProps {
   prompt: string;
@@ -28,16 +29,17 @@ export function PromptInput({
   onNavigateTemplates,
   isGenerating,
 }: PromptInputProps) {
+  const { t } = useTranslation();
   return (
     <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
       <div className="relative">
         {selectedTemplateId && (
           <div className="absolute top-3 left-3 z-10">
             <span className="bg-primary-start/20 text-primary-start inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs">
-              模板
+              {t("home.template")}
               <button
                 onClick={onClearTemplate}
-                aria-label="清除模板"
+                aria-label={t("home.clearTemplate")}
                 className="hover:text-primary-start/70"
               >
                 ✕
@@ -46,7 +48,7 @@ export function PromptInput({
           </div>
         )}
         <Textarea
-          placeholder="描述你想要生成的画面..."
+          placeholder={t("home.promptPlaceholder")}
           value={prompt}
           onChange={(e) => {
             onPromptChange(e.target.value);
@@ -64,8 +66,8 @@ export function PromptInput({
             variant="ghost"
             onClick={onNavigateTemplates}
             className="text-text-secondary hover:bg-surface-elevated hover:text-text-primary h-9 w-9 p-0"
-            aria-label="模板"
-            title="模板"
+            aria-label={t("home.template")}
+            title={t("home.template")}
           >
             <BookOpen className="h-4 w-4" />
           </Button>
@@ -79,8 +81,8 @@ export function PromptInput({
                 ? "bg-primary-start/20 text-primary-start hover:bg-primary-start/30"
                 : "text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
             }`}
-            aria-label={enhancePrompt ? "AI优化已开启" : "AI优化"}
-            title={enhancePrompt ? "AI优化已开启" : "AI优化"}
+            aria-label={enhancePrompt ? t("home.aiOptimizeOn") : t("home.aiOptimize")}
+            title={enhancePrompt ? t("home.aiOptimizeOn") : t("home.aiOptimize")}
           >
             <Wand2 className="h-4 w-4" />
           </Button>
@@ -88,7 +90,7 @@ export function PromptInput({
             size="sm"
             onClick={onGenerate}
             disabled={!prompt || isGenerating}
-            aria-label={isGenerating ? "生成中" : "生成"}
+            aria-label={isGenerating ? t("common.generating") : t("common.generate")}
             className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 h-9 w-9 bg-gradient-to-r p-0 disabled:opacity-50"
           >
             {isGenerating ? (

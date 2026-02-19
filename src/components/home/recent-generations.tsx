@@ -9,6 +9,7 @@ import { RecentGenerationsSkeleton } from "@/components/skeletons";
 import { ImageLightbox, type LightboxSlide } from "@/components/image-lightbox";
 import type { HistoryItem } from "@/lib/types";
 import { inferContentType, getImageUrl } from "@/lib/transforms";
+import { useTranslation } from "@/lib/i18n";
 
 interface RecentGenerationsProps {
   contentType: "image" | "video";
@@ -29,6 +30,7 @@ export function RecentGenerations({
   lightboxSlides,
   onNavigateGallery,
 }: RecentGenerationsProps) {
+  const { t } = useTranslation();
   const [hoveredRecentVideo, setHoveredRecentVideo] = useState<number | null>(null);
   const [recentLightboxOpen, setRecentLightboxOpen] = useState(false);
   const [recentLightboxIndex, setRecentLightboxIndex] = useState(0);
@@ -37,14 +39,16 @@ export function RecentGenerations({
     <>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-text-primary font-semibold">
-          最近生成{contentType === "video" ? "（视频）" : "（图片）"}
+          {contentType === "video"
+            ? t("recentGenerations.titleVideo")
+            : t("recentGenerations.titleImage")}
         </h2>
         <Button
           variant="ghost"
           onClick={onNavigateGallery}
           className="text-accent hover:text-accent/80"
         >
-          查看全部
+          {t("common.viewAll")}
           <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
@@ -55,7 +59,9 @@ export function RecentGenerations({
         ) : !hasAnyRecent ? (
           <div className="flex w-full items-center justify-center py-8">
             <p className="text-text-secondary text-sm">
-              {isAuthenticated ? "还没有生成记录" : "登录后查看生成历史"}
+              {isAuthenticated
+                ? t("recentGenerations.noRecords")
+                : t("recentGenerations.loginToView")}
             </p>
           </div>
         ) : (

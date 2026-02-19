@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import useSWR from "swr";
 import type { QualityPreset, ModelsResponse } from "@/lib/types";
 
@@ -36,6 +37,7 @@ export function ModelSelector({
   onManualModelChange,
   isAuthenticated,
 }: ModelSelectorProps) {
+  const { t } = useTranslation();
   const [showAdvancedModels, setShowAdvancedModels] = useState(false);
 
   const { data: modelsData } = useSWR<ModelsResponse>(isAuthenticated ? "/models" : null);
@@ -78,7 +80,9 @@ export function ModelSelector({
             className="overflow-hidden"
           >
             <div className="border-primary-start/30 bg-primary-start/10 flex items-center justify-between rounded-xl border px-3 py-2">
-              <span className="text-primary-start text-xs">已手动选择: {manualModelName}</span>
+              <span className="text-primary-start text-xs">
+                {t("params.manualSelection", { name: manualModelName || "" })}
+              </span>
               <button
                 onClick={() => onManualModelChange(null)}
                 className="text-primary-start hover:bg-primary-start/20 rounded-md p-0.5"
@@ -118,7 +122,7 @@ export function ModelSelector({
               <span className="text-text-secondary text-xs">{preset.description_zh}</span>
               {preset.is_default && (
                 <span className="from-primary-start to-primary-end absolute -top-1.5 right-2 rounded-full bg-gradient-to-r px-1.5 py-0 text-[10px] font-medium text-white">
-                  推荐
+                  {t("common.recommended")}
                 </span>
               )}
             </button>
@@ -135,7 +139,7 @@ export function ModelSelector({
             onClick={() => setShowAdvancedModels(!showAdvancedModels)}
             className="text-text-secondary hover:text-text-primary w-full"
           >
-            <span className="mr-2 text-xs">🔧 高级选项</span>
+            <span className="mr-2 text-xs">🔧 {t("params.advancedOptions")}</span>
             {showAdvancedModels ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -219,7 +223,7 @@ export function ModelSelector({
                       onClick={() => onManualModelChange(null)}
                       className="text-text-secondary hover:text-text-primary w-full text-xs"
                     >
-                      清除手动选择，恢复预设
+                      {t("params.clearManualSelection")}
                     </Button>
                   )}
                 </div>

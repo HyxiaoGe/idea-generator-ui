@@ -8,6 +8,7 @@ import { showErrorToast } from "@/lib/error-toast";
 import { useTaskProgress } from "./use-task-progress";
 import type { AspectRatio, ProviderInfo, GeneratedImageInfo, GeneratedImage } from "@/lib/types";
 import { getProviderAndModel, mapResolution, getImageUrl } from "@/lib/transforms";
+import { getTranslations, interpolate } from "@/lib/i18n";
 
 interface UseVideoGenerationOptions {
   onComplete?: () => void;
@@ -70,14 +71,15 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
       setIsGenerating(false);
       setTaskId(null);
       onCompleteRef.current?.();
-      toast.success("视频生成完成！");
+      toast.success(getTranslations().generation.videoComplete);
     },
     onFailed: (errors: string[]) => {
       setState("empty");
       setIsGenerating(false);
       setTaskId(null);
-      toast.error("生成失败", {
-        description: errors.join(", ") || "请重试",
+      const t = getTranslations();
+      toast.error(t.generation.failed, {
+        description: errors.join(", ") || t.generation.failedRetry,
       });
     },
   });
@@ -116,7 +118,7 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
         setState("empty");
         setIsGenerating(false);
         setProgress(0);
-        showErrorToast(error, "生成失败");
+        showErrorToast(error, getTranslations().generation.failed);
       }
     },
     [videoModel, videoAspectRatio, videoResolution]
@@ -127,13 +129,16 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
     const api = getApiClient();
     try {
       const result = await api.cancelTask(taskId);
+      const t = getTranslations();
       if (result.refunded_count > 0) {
-        toast.info("已取消生成", { description: `已退还 ${result.refunded_count} 次配额` });
+        toast.info(t.quota.cancelledGeneration, {
+          description: interpolate(t.quota.refundedQuota, { count: result.refunded_count }),
+        });
       } else {
-        toast.info("已取消生成");
+        toast.info(t.quota.cancelledGeneration);
       }
     } catch {
-      toast.info("已取消生成");
+      toast.info(getTranslations().quota.cancelledGeneration);
     }
     setState("empty");
     setIsGenerating(false);

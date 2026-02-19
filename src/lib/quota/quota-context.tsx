@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import type { QuotaStatusResponse } from "@/lib/types";
 import { getApiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import { getTranslations, getCurrentLanguage, dateLocaleMap, interpolate } from "@/lib/i18n";
 
 interface QuotaContextType {
   quota: QuotaStatusResponse | null;
@@ -38,12 +39,16 @@ export function QuotaProvider({ children }: { children: ReactNode }) {
       const client = getApiClient();
       const result = await client.checkQuota();
       if (!result.can_generate) {
-        toast.error("无法生成", {
+        const t = getTranslations();
+        const lang = getCurrentLanguage();
+        toast.error(t.quota.cannotGenerate, {
           description:
             result.reason ||
             (quota?.resets_at
-              ? `将于 ${new Date(quota.resets_at).toLocaleString("zh-CN")} 重置`
-              : "请稍后重试"),
+              ? interpolate(t.settings.resetsAt, {
+                  date: new Date(quota.resets_at).toLocaleString(dateLocaleMap[lang]),
+                })
+              : t.errors.serviceErrorDesc),
         });
         return false;
       }

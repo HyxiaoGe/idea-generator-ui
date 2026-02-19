@@ -13,6 +13,7 @@ import type {
   GeneratedImage,
 } from "@/lib/types";
 import { getProviderAndModel, mapResolution, getImageUrl } from "@/lib/transforms";
+import { getTranslations, interpolate } from "@/lib/i18n";
 
 interface UseImageGenerationOptions {
   onComplete?: () => void;
@@ -58,14 +59,15 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
       setEnhancePrompt(false);
       setBatchTaskId(null);
       onCompleteRef.current?.();
-      toast.success("生成完成！");
+      toast.success(getTranslations().generation.complete);
     },
     onFailed: (errors: string[]) => {
       setState("empty");
       setIsGenerating(false);
       setBatchTaskId(null);
-      toast.error("生成失败", {
-        description: errors.join(", ") || "请重试",
+      const t = getTranslations();
+      toast.error(t.generation.failed, {
+        description: errors.join(", ") || t.generation.failedRetry,
       });
     },
   });
@@ -169,12 +171,15 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
           setIsGenerating(false);
           setEnhancePrompt(false);
           onCompleteRef.current?.();
+          const t = getTranslations();
           if (result.processed_prompt) {
-            toast.success("生成完成！", {
-              description: `优化后的提示词: ${result.processed_prompt.slice(0, 80)}...`,
+            toast.success(t.generation.complete, {
+              description: interpolate(t.generation.completeWithPrompt, {
+                prompt: result.processed_prompt.slice(0, 80),
+              }),
             });
           } else {
-            toast.success("生成完成！");
+            toast.success(t.generation.complete);
           }
         }
       } catch (error) {
@@ -182,7 +187,7 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
         setState("empty");
         setIsGenerating(false);
         setProgress(0);
-        showErrorToast(error, "生成失败");
+        showErrorToast(error, getTranslations().generation.failed);
       }
     },
     [count, manualModel, qualityPreset, searchGrounding, enhancePrompt, aspectRatio, resolution]
@@ -195,13 +200,16 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
     if (batchTaskId) {
       try {
         const result = await api.cancelTask(batchTaskId);
+        const t = getTranslations();
         if (result.refunded_count > 0) {
-          toast.info("已取消生成", { description: `已退还 ${result.refunded_count} 次配额` });
+          toast.info(t.quota.cancelledGeneration, {
+            description: interpolate(t.quota.refundedQuota, { count: result.refunded_count }),
+          });
         } else {
-          toast.info("已取消生成");
+          toast.info(t.quota.cancelledGeneration);
         }
       } catch {
-        toast.info("已取消生成");
+        toast.info(getTranslations().quota.cancelledGeneration);
       }
     }
 

@@ -22,13 +22,34 @@ The frontend connects to a FastAPI backend (Nano Banana Lab) for:
 ## Commands
 
 ```bash
-npm install        # Install dependencies
-npm run dev        # Start dev server (localhost:3000)
-npm run build      # Production build
-npm run lint       # ESLint
+npm install            # Install dependencies
+npm run dev            # Start dev server (localhost:3001)
+npm run build          # Production build
+npm run lint           # ESLint
+npm run lint:fix       # ESLint with auto-fix
+npm run typecheck      # TypeScript type checking (tsc --noEmit)
+npm run format         # Prettier format all src files
+npm run format:check   # Prettier check (CI)
+npm run test           # Run tests once (vitest run)
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Tests with coverage (covers src/lib/**, excludes src/components/ui/**)
 ```
 
-No test framework is currently configured.
+### Testing
+
+Vitest with jsdom + React Testing Library. Tests live in `src/lib/__tests__/`. Run a single test file:
+
+```bash
+npx vitest run src/lib/__tests__/transforms.test.ts
+```
+
+### Pre-commit Hook
+
+Husky runs on every commit: `lint-staged` (ESLint fix + Prettier on staged files) then `tsc --noEmit`. Commits will fail if there are type errors.
+
+### Code Style
+
+Prettier enforces: double quotes, semicolons, 2-space indent, trailing commas (es5), 100 char print width. Tailwind class sorting via `prettier-plugin-tailwindcss`.
 
 ## Architecture
 
@@ -118,11 +139,14 @@ src/
 Copy `.env.example` to `.env.local`:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=/api                        # Backend API base (proxied through Next.js rewrites)
-NEXT_PUBLIC_WS_URL=ws://localhost:8888/api/ws        # WebSocket endpoint
+API_BASE_URL=http://localhost:8888/api               # Server-side only: backend URL for Next.js rewrites
+NEXT_PUBLIC_API_BASE_URL=/api                        # Client-side API base (proxied through Next.js rewrites)
+NEXT_PUBLIC_WS_URL=ws://localhost:8888/api/ws        # WebSocket endpoint (direct, not proxied)
 NEXT_PUBLIC_AUTH_URL=http://localhost:8100            # Auth-service base URL
 NEXT_PUBLIC_AUTH_CLIENT_ID=app_xxx                   # Auth-service client ID
 ```
+
+`/api/*` requests are proxied to the backend via Next.js rewrites in `next.config.ts`. Auth requests go directly to auth-service (not proxied).
 
 ### Authentication Flow
 
@@ -140,6 +164,10 @@ Auth is handled by a standalone auth-service (port 8100), not the main backend.
 ### API Client
 
 `src/lib/api-client.ts` provides a singleton `ApiClient` class. Get it via `getApiClient()`. It auto-injects `Authorization` headers, supports `X-Provider`/`X-Model` headers for provider routing, and automatically retries on 401 (after token refresh). All pages use this client for backend calls. Auth-specific requests (token exchange, refresh, revoke, userinfo) go through `src/lib/auth/auth-client.ts` directly to auth-service, not through `ApiClient`.
+
+### ESLint Configuration
+
+Flat config (`eslint.config.mjs`): TypeScript recommended + Next.js + Prettier. `@typescript-eslint/no-unused-vars` and `no-explicit-any` are warnings (not errors). Files in `src/components/ui/` have relaxed rules (auto-generated shadcn components — avoid editing these manually).
 
 ### Legacy Code
 

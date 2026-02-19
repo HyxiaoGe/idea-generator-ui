@@ -18,11 +18,13 @@ import type {
   GetPreferencesResponse,
 } from "@/lib/types";
 import { getImageUrl, getTemplateDisplayName } from "@/lib/transforms";
+import { useTranslation } from "@/lib/i18n";
 
 export default function TemplatesPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState("全部");
+  const { t } = useTranslation();
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -39,7 +41,11 @@ export default function TemplatesPage() {
   const templateParams = useMemo(() => {
     const params = new URLSearchParams();
     params.set("page_size", "50");
-    if (selectedCategory !== "全部" && selectedCategory !== "推荐" && selectedCategory !== "收藏") {
+    if (
+      selectedCategory !== "all" &&
+      selectedCategory !== "recommended" &&
+      selectedCategory !== "favorites"
+    ) {
       params.set("category", selectedCategory);
     }
     if (debouncedSearch) params.set("search", debouncedSearch);
@@ -48,7 +54,7 @@ export default function TemplatesPage() {
 
   // Fetch templates from API
   const { data: apiTemplatesData, mutate: mutateTemplates } = useSWR<TemplateListResponse>(
-    isAuthenticated && selectedCategory !== "收藏" && selectedCategory !== "推荐"
+    isAuthenticated && selectedCategory !== "favorites" && selectedCategory !== "recommended"
       ? `/templates?${templateParams}`
       : null
   );
@@ -60,12 +66,12 @@ export default function TemplatesPage() {
 
   // Fetch favorites tab
   const { data: favoriteTemplates, mutate: mutateFavorites } = useSWR<TemplateListItem[]>(
-    isAuthenticated && selectedCategory === "收藏" ? "/templates/favorites" : null
+    isAuthenticated && selectedCategory === "favorites" ? "/templates/favorites" : null
   );
 
   // Fetch recommended tab
   const { data: recommendedTemplates } = useSWR<TemplateListItem[]>(
-    isAuthenticated && selectedCategory === "推荐" ? "/templates/recommended" : null
+    isAuthenticated && selectedCategory === "recommended" ? "/templates/recommended" : null
   );
 
   // Get language from user settings (cached by SWR)
@@ -76,10 +82,10 @@ export default function TemplatesPage() {
 
   // Determine which templates to show
   const templates: TemplateListItem[] = useMemo(() => {
-    if (selectedCategory === "收藏") {
+    if (selectedCategory === "favorites") {
       return favoriteTemplates || [];
     }
-    if (selectedCategory === "推荐") {
+    if (selectedCategory === "recommended") {
       return recommendedTemplates || [];
     }
     if (apiTemplatesData?.items && apiTemplatesData.items.length > 0) {
@@ -90,7 +96,7 @@ export default function TemplatesPage() {
 
   // Build category list from API
   const categories = useMemo(() => {
-    const base = ["全部", "推荐", "收藏"];
+    const base = ["all", "recommended", "favorites"];
     if (categoriesData && categoriesData.length > 0) {
       return [...base, ...categoriesData.map((c) => c.category)];
     }
@@ -112,17 +118,21 @@ export default function TemplatesPage() {
   const handleToggleFavorite = useCallback(
     async (template: TemplateListItem) => {
       if (!isAuthenticated) {
-        toast.error("请先登录");
+        toast.error(t("home.pleaseLoginFirst"));
         return;
       }
       try {
         const api = getApiClient();
         const result = await api.toggleTemplateFavorite(template.id);
-        toast.success(result.action === "removed" ? "已取消收藏" : "已添加到收藏");
+        toast.success(
+          result.action === "removed"
+            ? t("templates.removedFromFavorites")
+            : t("templates.addedToFavorites")
+        );
         mutateTemplates();
         mutateFavorites();
       } catch {
-        toast.error("操作失败");
+        toast.error(t("common.operationFailed"));
       }
     },
     [isAuthenticated, mutateTemplates, mutateFavorites]
@@ -131,7 +141,7 @@ export default function TemplatesPage() {
   const handleToggleLike = useCallback(
     async (template: TemplateListItem) => {
       if (!isAuthenticated) {
-        toast.error("请先登录");
+        toast.error(t("home.pleaseLoginFirst"));
         return;
       }
       try {
@@ -139,7 +149,7 @@ export default function TemplatesPage() {
         await api.toggleTemplateLike(template.id);
         mutateTemplates();
       } catch {
-        toast.error("操作失败");
+        toast.error(t("common.operationFailed"));
       }
     },
     [isAuthenticated, mutateTemplates]
@@ -159,8 +169,17 @@ export default function TemplatesPage() {
     }
   };
 
-  // In "收藏" tab, all items are favorited
-  const isFavoritedTab = selectedCategory === "收藏";
+  // In "favorites" tab, all items are favorited
+  const isFavoritedTab = selectedCategory === "favorites";
+
+  const categoryDisplayName = (cat: string) => {
+    const map: Record<string, string> = {
+      all: t("templates.allCategory"),
+      recommended: t("templates.recommendedCategory"),
+      favorites: t("templates.favoritesCategory"),
+    };
+    return map[cat] || cat;
+  };
 
   return (
     <div className="mx-auto max-w-screen-xl px-6 py-8">
@@ -168,14 +187,14 @@ export default function TemplatesPage() {
         <div className="flex items-center gap-4">
           <BackButton onClick={() => router.push("/")} />
           <div>
-            <h1 className="text-text-primary text-2xl font-semibold">创作模板</h1>
-            <p className="text-text-secondary text-sm">选择模板快速开始创作</p>
+            <h1 className="text-text-primary text-2xl font-semibold">{t("templates.title")}</h1>
+            <p className="text-text-secondary text-sm">{t("templates.subtitle")}</p>
           </div>
         </div>
 
         <div className="flex gap-3">
           <Input
-            placeholder="搜索模板..."
+            placeholder={t("templates.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border-border bg-surface focus:border-primary-start focus:ring-primary-start/20 w-full rounded-xl focus:ring-2 md:w-[240px]"
@@ -194,9 +213,9 @@ export default function TemplatesPage() {
                 : "border-border bg-surface text-text-secondary hover:text-text-primary hover:border-primary-start border"
             }`}
           >
-            {category === "推荐" && "🔥 "}
-            {category === "收藏" && "❤️ "}
-            {category}
+            {category === "recommended" && "🔥 "}
+            {category === "favorites" && "❤️ "}
+            {categoryDisplayName(category)}
           </button>
         ))}
       </div>
@@ -220,14 +239,14 @@ export default function TemplatesPage() {
                 />
               ) : (
                 <div className="bg-surface-secondary flex h-full w-full items-center justify-center">
-                  <span className="text-text-secondary text-sm">暂无预览</span>
+                  <span className="text-text-secondary text-sm">{t("common.noPreview")}</span>
                 </div>
               )}
 
               {template.use_count > 10000 && (
                 <div className="from-warning to-destructive absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-gradient-to-r px-2 py-1 backdrop-blur-sm">
                   <Sparkles className="h-3 w-3 text-white" />
-                  <span className="text-xs font-medium text-white">热门</span>
+                  <span className="text-xs font-medium text-white">{t("common.hot")}</span>
                 </div>
               )}
 
@@ -252,7 +271,7 @@ export default function TemplatesPage() {
                     className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 w-full rounded-xl bg-gradient-to-r"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
-                    使用此模板
+                    {t("templates.useTemplate")}
                   </Button>
                 </div>
               </div>
@@ -272,7 +291,9 @@ export default function TemplatesPage() {
               </p>
               <div className="text-text-secondary flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
-                  <span>{template.use_count.toLocaleString()} 次使用</span>
+                  <span>
+                    {t("templates.usageCount", { count: template.use_count.toLocaleString() })}
+                  </span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -291,7 +312,7 @@ export default function TemplatesPage() {
                   className="text-primary-start hover:text-primary-start/80 h-8"
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
-                  生成
+                  {t("common.generate")}
                 </Button>
               </div>
             </div>
@@ -304,8 +325,10 @@ export default function TemplatesPage() {
           <div className="from-primary-start/20 to-primary-end/20 mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br text-5xl">
             📚
           </div>
-          <h2 className="text-text-primary mb-2 text-xl font-semibold">未找到模板</h2>
-          <p className="text-text-secondary text-center text-sm">试试搜索其他关键词</p>
+          <h2 className="text-text-primary mb-2 text-xl font-semibold">
+            {t("templates.notFound")}
+          </h2>
+          <p className="text-text-secondary text-center text-sm">{t("templates.notFoundDesc")}</p>
         </div>
       )}
     </div>

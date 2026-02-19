@@ -8,9 +8,11 @@ import { BackButton } from "@/components/ui/back-button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "motion/react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function StylePage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [contentImage, setContentImage] = useState<string | null>(null);
   const [styleImage, setStyleImage] = useState<string | null>(null);
   const [instruction, setInstruction] = useState("");
@@ -53,7 +55,7 @@ export default function StylePage() {
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <BackButton onClick={() => router.push("/")} />
-          <h1 className="text-text-primary text-2xl font-semibold">风格迁移</h1>
+          <h1 className="text-text-primary text-2xl font-semibold">{t("style.title")}</h1>
         </div>
       </div>
 
@@ -61,24 +63,22 @@ export default function StylePage() {
         <div className="flex items-center gap-3">
           <span className="text-2xl">🚧</span>
           <div>
-            <h3 className="text-text-primary font-semibold">功能开发中</h3>
-            <p className="text-text-secondary text-sm">
-              风格迁移功能正在开发中，当前为演示模式，生成结果为示例图片。
-            </p>
+            <h3 className="text-text-primary font-semibold">{t("style.devWarning")}</h3>
+            <p className="text-text-secondary text-sm">{t("style.devWarningDesc")}</p>
           </div>
         </div>
       </div>
 
       <div className="mb-6 grid gap-6 md:grid-cols-[1fr,auto,1fr]">
         <div className="border-border bg-surface rounded-2xl border p-6">
-          <h3 className="text-text-primary mb-4 font-semibold">内容图</h3>
+          <h3 className="text-text-primary mb-4 font-semibold">{t("style.contentImage")}</h3>
           {!contentImage ? (
             <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
               <div className="from-primary-start/20 to-primary-end/20 mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
                 🖼️
               </div>
-              <p className="text-text-primary mb-1 text-sm font-medium">拖拽或点击上传</p>
-              <p className="text-text-secondary text-xs">支持 JPG, PNG</p>
+              <p className="text-text-primary mb-1 text-sm font-medium">{t("style.dragOrClick")}</p>
+              <p className="text-text-secondary text-xs">{t("style.supportedFormats")}</p>
               <input
                 type="file"
                 accept="image/*"
@@ -99,7 +99,9 @@ export default function StylePage() {
               </Button>
             </div>
           )}
-          <p className="text-text-secondary mt-3 text-center text-xs">保留此图的内容结构</p>
+          <p className="text-text-secondary mt-3 text-center text-xs">
+            {t("style.contentImageHint")}
+          </p>
         </div>
 
         <div className="flex items-center justify-center">
@@ -109,14 +111,14 @@ export default function StylePage() {
         </div>
 
         <div className="border-border bg-surface rounded-2xl border p-6">
-          <h3 className="text-text-primary mb-4 font-semibold">风格参考</h3>
+          <h3 className="text-text-primary mb-4 font-semibold">{t("style.styleReference")}</h3>
           {!styleImage ? (
             <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
               <div className="from-primary-start/20 to-primary-end/20 mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
                 🎨
               </div>
-              <p className="text-text-primary mb-1 text-sm font-medium">拖拽或点击上传</p>
-              <p className="text-text-secondary text-xs">支持 JPG, PNG</p>
+              <p className="text-text-primary mb-1 text-sm font-medium">{t("style.dragOrClick")}</p>
+              <p className="text-text-secondary text-xs">{t("style.supportedFormats")}</p>
               <input
                 type="file"
                 accept="image/*"
@@ -137,19 +139,23 @@ export default function StylePage() {
               </Button>
             </div>
           )}
-          <p className="text-text-secondary mt-3 text-center text-xs">提取此图的艺术风格</p>
+          <p className="text-text-secondary mt-3 text-center text-xs">
+            {t("style.styleReferenceHint")}
+          </p>
         </div>
       </div>
 
       <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
-        <label className="text-text-primary mb-3 block font-semibold">迁移指令（可选）</label>
+        <label className="text-text-primary mb-3 block font-semibold">
+          {t("style.transferInstruction")}
+        </label>
         <Textarea
-          placeholder="例如：保留人物轮廓，应用水彩画风格..."
+          placeholder={t("style.transferInstructionPlaceholder")}
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           className="min-h-[80px] resize-none rounded-xl"
         />
-        <p className="text-text-secondary mt-2 text-xs">不填写则自动识别风格特征</p>
+        <p className="text-text-secondary mt-2 text-xs">{t("style.transferInstructionHint")}</p>
       </div>
 
       <Button
@@ -157,13 +163,15 @@ export default function StylePage() {
         disabled={!contentImage || !styleImage || state === "loading"}
         className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 mb-6 w-full rounded-xl bg-gradient-to-r py-6"
       >
-        开始迁移
+        {t("style.startTransfer")}
       </Button>
 
       {state === "loading" && (
         <div className="border-border bg-surface mb-6 rounded-2xl border p-8">
           <div className="mb-4 text-center">
-            <p className="text-text-primary mb-2 text-lg font-semibold">正在迁移风格...</p>
+            <p className="text-text-primary mb-2 text-lg font-semibold">
+              {t("style.transferring")}
+            </p>
             <p className="text-text-secondary text-sm">{progress}%</p>
           </div>
           <Progress value={progress} className="h-2" />
@@ -174,7 +182,7 @@ export default function StylePage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="mb-4 flex items-center justify-center gap-4">
             <div className="bg-border h-px flex-1"></div>
-            <span className="text-text-secondary text-sm">生成结果</span>
+            <span className="text-text-secondary text-sm">{t("style.generationResult")}</span>
             <div className="bg-border h-px flex-1"></div>
           </div>
 
@@ -183,15 +191,15 @@ export default function StylePage() {
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" className="rounded-xl">
                 <Download className="mr-2 h-4 w-4" />
-                下载原图
+                {t("style.downloadOriginal")}
               </Button>
               <Button variant="outline" className="rounded-xl">
                 <RotateCw className="mr-2 h-4 w-4" />
-                重新迁移
+                {t("style.retransfer")}
               </Button>
               <Button variant="outline" className="rounded-xl" onClick={() => router.push("/")}>
                 <Plus className="mr-2 h-4 w-4" />
-                继续创作
+                {t("common.continueCreating")}
               </Button>
             </div>
           </div>

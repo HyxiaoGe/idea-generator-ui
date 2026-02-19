@@ -3,6 +3,7 @@
 import { Sparkles, Film } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { ExamplePrompt } from "@/lib/hooks/use-example-prompts";
+import { useTranslation } from "@/lib/i18n";
 
 interface EmptyStatePromptsProps {
   contentType: "image" | "video";
@@ -23,6 +24,7 @@ export function EmptyStatePrompts({
   onPageChange,
   onPauseChange,
 }: EmptyStatePromptsProps) {
+  const { t } = useTranslation();
   return (
     <div className="border-border flex h-full flex-col items-center justify-center border-2 border-dashed p-8">
       <div className="from-primary-start/20 to-primary-end/20 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br">
@@ -32,7 +34,7 @@ export function EmptyStatePrompts({
           <Film className="text-primary-start h-8 w-8" />
         )}
       </div>
-      <p className="text-text-secondary mb-6 text-center text-sm">生成结果将在此显示</p>
+      <p className="text-text-secondary mb-6 text-center text-sm">{t("home.resultWillShow")}</p>
 
       {examplePrompts.length > 0 && (
         <div

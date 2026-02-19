@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { WebSocketClient } from "./websocket-client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
+import { getTranslations, interpolate } from "@/lib/i18n";
 
 interface WSContextType {
   ws: WebSocketClient | null;
@@ -27,14 +28,17 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     // Register global handlers
     const unsubQuota = ws.on("quota_warning", (msg) => {
       const data = msg.data as { remaining?: number; message?: string };
-      toast.warning("配额警告", {
-        description: data.message || `剩余配额: ${data.remaining}`,
+      const t = getTranslations();
+      toast.warning(t.quota.warning, {
+        description:
+          data.message || interpolate(t.quota.remainingQuota, { n: data.remaining ?? 0 }),
       });
     });
 
     const unsubComplete = ws.on("generation_complete", (msg) => {
       const data = msg.data as { prompt?: string };
-      toast.success("生成完成", {
+      const t = getTranslations();
+      toast.success(t.quota.generationComplete, {
         description: data.prompt ? `"${data.prompt.slice(0, 30)}..."` : undefined,
       });
     });

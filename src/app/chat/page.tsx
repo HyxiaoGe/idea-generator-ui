@@ -29,6 +29,7 @@ import useSWR from "swr";
 import { RequireAuth } from "@/lib/auth/require-auth";
 import { getApiClient } from "@/lib/api-client";
 import { getImageUrl, formatRelativeTime } from "@/lib/transforms";
+import { useTranslation, dateLocaleMap, getTranslations, getCurrentLanguage } from "@/lib/i18n";
 import type { AspectRatio, ListChatsResponse } from "@/lib/types";
 
 interface Message {
@@ -41,12 +42,12 @@ interface Message {
   loading?: boolean;
 }
 
-const samplePrompts = ["生成一只橘猫坐在窗边", "画一个赛博朋克风格的城市", "创作一幅抽象艺术画"];
-
 const SESSION_STORAGE_KEY = "chat_session_id";
 
 export default function ChatPage() {
   const router = useRouter();
+  const { t, language } = useTranslation();
+  const samplePrompts = [t("chat.samplePrompt1"), t("chat.samplePrompt2"), t("chat.samplePrompt3")];
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [currentVersion, setCurrentVersion] = useState(0);
@@ -95,10 +96,13 @@ export default function ChatPage() {
               content: msg.content,
               image: imageUrl,
               version: msg.role === "assistant" && imageUrl ? idx : undefined,
-              timestamp: new Date(msg.timestamp).toLocaleTimeString("zh-CN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
+              timestamp: new Date(msg.timestamp).toLocaleTimeString(
+                dateLocaleMap[getCurrentLanguage()],
+                {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }
+              ),
             };
           });
           setMessages(restoredMessages);
@@ -131,7 +135,7 @@ export default function ChatPage() {
       setSessionId(result.session_id);
       return result.session_id;
     } catch {
-      toast.error("创建会话失败");
+      toast.error(getTranslations().chat.createSessionFailed);
       return null;
     }
   }, [aspectRatio]);
@@ -145,7 +149,7 @@ export default function ChatPage() {
         id: Date.now(),
         role: "user",
         content: text,
-        timestamp: new Date().toLocaleTimeString("zh-CN", {
+        timestamp: new Date().toLocaleTimeString(dateLocaleMap[getCurrentLanguage()], {
           hour: "2-digit",
           minute: "2-digit",
         }),
@@ -190,10 +194,10 @@ export default function ChatPage() {
         const assistantMessage: Message = {
           id: Date.now() + 2,
           role: "assistant",
-          content: result.text || "我已经为您生成了图片，请查看。",
+          content: result.text || getTranslations().chat.defaultAssistantReply,
           image: imageUrl,
           version: versions.length + 1,
-          timestamp: new Date().toLocaleTimeString("zh-CN", {
+          timestamp: new Date().toLocaleTimeString(dateLocaleMap[getCurrentLanguage()], {
             hour: "2-digit",
             minute: "2-digit",
           }),
@@ -209,13 +213,14 @@ export default function ChatPage() {
         setIsLoading(false);
         setImageLoading(false);
         mutateChatList();
-        toast.success("图片生成完成");
+        toast.success(getTranslations().chat.imageGenerated);
       } catch (error) {
         setMessages((prev) => prev.filter((m) => !m.loading));
         setIsLoading(false);
         setImageLoading(false);
-        const message = error instanceof Error ? error.message : "发送失败";
-        toast.error("发送失败", { description: message });
+        const tr = getTranslations();
+        const message = error instanceof Error ? error.message : tr.chat.sendFailed;
+        toast.error(tr.chat.sendFailed, { description: message });
       }
     },
     [input, isLoading, sessionId, createSession, versions.length, aspectRatio, mutateChatList]
@@ -231,7 +236,7 @@ export default function ChatPage() {
     setSessionId(null);
     setCurrentVersion(0);
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    toast.info("已创建新对话");
+    toast.info(getTranslations().chat.newChatCreated);
   }, []);
 
   const handleSwitchSession = useCallback(async (newSessionId: string) => {
@@ -248,7 +253,7 @@ export default function ChatPage() {
           content: msg.content,
           image: imageUrl,
           version: msg.role === "assistant" && imageUrl ? idx : undefined,
-          timestamp: new Date(msg.timestamp).toLocaleTimeString("zh-CN", {
+          timestamp: new Date(msg.timestamp).toLocaleTimeString(dateLocaleMap[language], {
             hour: "2-digit",
             minute: "2-digit",
           }),
@@ -264,9 +269,9 @@ export default function ChatPage() {
         setCurrentVersion(0);
       }
       setShowHistory(false);
-      toast.success("已切换会话");
+      toast.success(getTranslations().chat.switchedSession);
     } catch {
-      toast.error("加载会话失败");
+      toast.error(getTranslations().chat.loadSessionFailed);
     }
   }, []);
 
@@ -279,9 +284,9 @@ export default function ChatPage() {
         if (delSessionId === sessionId) {
           handleNewChat();
         }
-        toast.success("已删除会话");
+        toast.success(getTranslations().chat.deletedSession);
       } catch {
-        toast.error("删除失败");
+        toast.error(getTranslations().chat.deleteFailed);
       }
     },
     [sessionId, mutateChatList, handleNewChat]
@@ -289,14 +294,15 @@ export default function ChatPage() {
 
   const handleExportChat = useCallback(() => {
     if (messages.length === 0) {
-      toast.info("没有可导出的对话");
+      toast.info(getTranslations().chat.nothingToExport);
       return;
     }
+    const tr = getTranslations();
     const text = messages
       .filter((m) => !m.loading)
       .map((m) => {
-        const role = m.role === "user" ? "用户" : "AI助手";
-        return `[${m.timestamp || ""}] ${role}:\n${m.content}${m.image ? `\n[图片: ${m.image}]` : ""}`;
+        const role = m.role === "user" ? tr.chat.userRole : tr.chat.assistantRole;
+        return `[${m.timestamp || ""}] ${role}:\n${m.content}${m.image ? `\n[${tr.common.image}: ${m.image}]` : ""}`;
       })
       .join("\n\n---\n\n");
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -306,7 +312,7 @@ export default function ChatPage() {
     link.download = `chat-export-${new Date().toISOString().slice(0, 10)}.txt`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("对话已导出");
+    toast.success(getTranslations().chat.chatExported);
   }, [messages]);
 
   const handleRegenerate = useCallback(async () => {
@@ -333,7 +339,7 @@ export default function ChatPage() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <BackButton onClick={() => router.push("/")} />
-            <h1 className="text-text-primary text-2xl font-semibold">对话微调</h1>
+            <h1 className="text-text-primary text-2xl font-semibold">{t("chat.title")}</h1>
           </div>
           <div className="flex gap-2">
             <Button
@@ -342,17 +348,17 @@ export default function ChatPage() {
               onClick={() => setShowHistory(!showHistory)}
             >
               <MessageSquare className="mr-2 h-4 w-4" />
-              历史会话
+              {t("chat.historySessions")}
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={handleExportChat}>
               <FileDown className="mr-2 h-4 w-4" />
-              导出对话
+              {t("chat.exportChat")}
             </Button>
             <Button
               onClick={handleNewChat}
               className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r"
             >
-              新对话
+              {t("chat.newChat")}
             </Button>
           </div>
         </div>
@@ -367,9 +373,13 @@ export default function ChatPage() {
               className="mb-6 overflow-hidden"
             >
               <div className="border-border bg-surface rounded-2xl border p-4">
-                <h3 className="text-text-primary mb-3 font-semibold">历史会话</h3>
+                <h3 className="text-text-primary mb-3 font-semibold">
+                  {t("chat.historySessions")}
+                </h3>
                 {chatSessions.length === 0 ? (
-                  <p className="text-text-secondary py-4 text-center text-sm">暂无历史会话</p>
+                  <p className="text-text-secondary py-4 text-center text-sm">
+                    {t("chat.noHistorySessions")}
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {chatSessions.map((session) => (
@@ -387,14 +397,14 @@ export default function ChatPage() {
                         >
                           <div className="flex items-center gap-2">
                             <p className="text-text-primary text-sm font-medium">
-                              会话 {session.session_id.slice(0, 8)}...
+                              {t("chat.session")} {session.session_id.slice(0, 8)}...
                             </p>
                             <span className="text-text-secondary text-xs">
-                              {session.message_count} 条消息
+                              {t("chat.messageCount", { count: session.message_count })}
                             </span>
                           </div>
                           <p className="text-text-secondary text-xs">
-                            {formatRelativeTime(session.last_activity)} · 比例{" "}
+                            {formatRelativeTime(session.last_activity)} · {t("params.aspectRatio")}{" "}
                             {session.aspect_ratio}
                           </p>
                         </button>
@@ -427,14 +437,16 @@ export default function ChatPage() {
                 </div>
               </div>
             </div>
-            <h2 className="text-text-primary mb-2 text-xl font-semibold">开始你的创作对话</h2>
+            <h2 className="text-text-primary mb-2 text-xl font-semibold">
+              {t("chat.startConversation")}
+            </h2>
             <p className="text-text-secondary mb-4 text-center text-sm">
-              描述你想要的画面，我会帮你一步步完善
+              {t("chat.startConversationDesc")}
             </p>
 
             {/* Aspect Ratio Selector */}
             <div className="mb-8 flex items-center gap-2">
-              <span className="text-text-secondary text-sm">宽高比:</span>
+              <span className="text-text-secondary text-sm">{t("chat.aspectRatioLabel")}</span>
               <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as AspectRatio)}>
                 <SelectTrigger className="border-border bg-surface-elevated w-[100px] rounded-xl text-sm">
                   <SelectValue />
@@ -466,9 +478,9 @@ export default function ChatPage() {
           <div className="grid gap-6 md:grid-cols-[45%,55%]">
             <div className="border-border bg-surface rounded-2xl border p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-text-primary font-semibold">当前图片</h3>
+                <h3 className="text-text-primary font-semibold">{t("chat.currentImage")}</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-text-secondary text-xs">比例:</span>
+                  <span className="text-text-secondary text-xs">{t("chat.ratio")}</span>
                   <Select
                     value={aspectRatio}
                     onValueChange={(v) => setAspectRatio(v as AspectRatio)}
@@ -502,7 +514,7 @@ export default function ChatPage() {
                   />
                 ) : (
                   <div className="border-border flex aspect-square items-center justify-center border-2 border-dashed">
-                    <p className="text-text-secondary text-sm">等待生成...</p>
+                    <p className="text-text-secondary text-sm">{t("chat.waitingForGeneration")}</p>
                   </div>
                 )}
               </div>
@@ -522,7 +534,7 @@ export default function ChatPage() {
                   }}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  下载
+                  {t("common.download")}
                 </Button>
                 <Button
                   variant="outline"
@@ -531,7 +543,7 @@ export default function ChatPage() {
                   onClick={handleRegenerate}
                 >
                   <RotateCw className="mr-2 h-4 w-4" />
-                  重新生成
+                  {t("chat.regenerate")}
                 </Button>
                 <Button
                   variant="outline"
@@ -541,18 +553,18 @@ export default function ChatPage() {
                     const lastUserMsg = messages.filter((m) => m.role === "user").pop();
                     if (lastUserMsg) {
                       navigator.clipboard.writeText(lastUserMsg.content);
-                      toast.success("已复制提示词");
+                      toast.success(t("chat.copiedPrompt"));
                     }
                   }}
                 >
                   <Copy className="mr-2 h-4 w-4" />
-                  复制提示词
+                  {t("common.copyPrompt")}
                 </Button>
               </div>
 
               {versions.length > 0 && (
                 <div>
-                  <p className="text-text-secondary mb-2 text-xs">历史版本</p>
+                  <p className="text-text-secondary mb-2 text-xs">{t("chat.historyVersions")}</p>
                   <div className="flex gap-2 overflow-x-auto">
                     {versions.map((version) => (
                       <motion.button
@@ -586,7 +598,7 @@ export default function ChatPage() {
 
             <div className="border-border bg-surface flex flex-col rounded-2xl border">
               <div className="border-border border-b p-6">
-                <h3 className="text-text-primary font-semibold">对话历史</h3>
+                <h3 className="text-text-primary font-semibold">{t("chat.chatHistory")}</h3>
               </div>
 
               <div className="flex-1 space-y-4 overflow-y-auto p-6" style={{ maxHeight: "500px" }}>
@@ -662,7 +674,7 @@ export default function ChatPage() {
               <div className="border-border border-t p-4">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="描述你想要的修改，如：让背景变成星空..."
+                    placeholder={t("chat.chatInputPlaceholder")}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSend()}

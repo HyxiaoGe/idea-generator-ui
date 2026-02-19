@@ -22,6 +22,7 @@ import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import { useAuth } from "@/lib/auth/auth-context";
 import { RequireAuth } from "@/lib/auth/require-auth";
+import { useTranslation } from "@/lib/i18n";
 import { getApiClient } from "@/lib/api-client";
 import type { HistoryItem, PaginatedResponse, FavoriteInfo } from "@/lib/types";
 import {
@@ -48,6 +49,7 @@ function GalleryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const initialType = searchParams.get("type") as "all" | "image" | "video" | "favorite" | null;
   const selectedItemId = searchParams.get("id") || null;
 
@@ -137,17 +139,17 @@ function GalleryContent() {
           // Use favorite_id for removal (from favoriteInfoToHistoryItem)
           const idToRemove = item.favorite_id || item.id;
           await api.removeFavorite(idToRemove);
-          toast.info("已取消收藏");
+          toast.info(t("gallery.removedFromFavorites"));
         } else {
           // Use image_id or item.id for adding
           const imageId = item.image_id || item.id;
           await api.addFavorite(imageId);
-          toast.success("已添加到收藏");
+          toast.success(t("gallery.addedToFavorites"));
         }
         mutateHistory();
         mutateFavorites();
       } catch {
-        toast.error("操作失败");
+        toast.error(t("common.operationFailed"));
       }
     },
     [mutateHistory, mutateFavorites]
@@ -158,11 +160,11 @@ function GalleryContent() {
       const api = getApiClient();
       try {
         await api.deleteHistoryItem(id);
-        toast.success("已删除");
+        toast.success(t("gallery.deleted"));
         mutateHistory();
         mutateFavorites();
       } catch {
-        toast.error("删除失败");
+        toast.error(t("gallery.deleteFailed"));
       }
     },
     [mutateHistory, mutateFavorites]
@@ -298,7 +300,9 @@ function GalleryContent() {
         <div className="mb-6 flex flex-col gap-4 md:mb-8">
           <div className="flex items-center gap-4">
             <BackButton onClick={() => router.push("/")} />
-            <h1 className="text-text-primary text-xl font-semibold md:text-2xl">我的画廊</h1>
+            <h1 className="text-text-primary text-xl font-semibold md:text-2xl">
+              {t("gallery.title")}
+            </h1>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -314,7 +318,14 @@ function GalleryContent() {
                       : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
-                  {{ all: "全部", image: "图片", video: "视频", favorite: "收藏" }[filter]}
+                  {
+                    {
+                      all: t("gallery.all"),
+                      image: t("gallery.images"),
+                      video: t("gallery.videos"),
+                      favorite: t("gallery.favorites"),
+                    }[filter]
+                  }
                 </button>
               ))}
             </div>
@@ -324,27 +335,27 @@ function GalleryContent() {
               {/* Date Filter */}
               <Select value={dateFilter} onValueChange={setDateFilter}>
                 <SelectTrigger className="border-border bg-surface w-full rounded-xl sm:w-[140px]">
-                  <SelectValue placeholder="全部时间" />
+                  <SelectValue placeholder={t("gallery.allTime")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部时间</SelectItem>
-                  <SelectItem value="today">今天</SelectItem>
-                  <SelectItem value="week">本周</SelectItem>
-                  <SelectItem value="month">本月</SelectItem>
+                  <SelectItem value="all">{t("gallery.allTime")}</SelectItem>
+                  <SelectItem value="today">{t("gallery.today")}</SelectItem>
+                  <SelectItem value="week">{t("gallery.thisWeek")}</SelectItem>
+                  <SelectItem value="month">{t("gallery.thisMonth")}</SelectItem>
                 </SelectContent>
               </Select>
 
               {/* Mode Filter */}
               <Select value={modeFilter} onValueChange={setModeFilter}>
                 <SelectTrigger className="border-border bg-surface w-full rounded-xl sm:w-[140px]">
-                  <SelectValue placeholder="所有模式" />
+                  <SelectValue placeholder={t("gallery.allModes")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">所有模式</SelectItem>
-                  <SelectItem value="basic">基础</SelectItem>
-                  <SelectItem value="chat">对话</SelectItem>
-                  <SelectItem value="style">风格迁移</SelectItem>
-                  <SelectItem value="blend">混合</SelectItem>
+                  <SelectItem value="all">{t("gallery.allModes")}</SelectItem>
+                  <SelectItem value="basic">{t("modeNames.basic")}</SelectItem>
+                  <SelectItem value="chat">{t("modeNames.chat")}</SelectItem>
+                  <SelectItem value="style">{t("modeNames.style")}</SelectItem>
+                  <SelectItem value="blend">{t("modeNames.blend")}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -352,7 +363,7 @@ function GalleryContent() {
               <div className="relative flex-1">
                 <Search className="text-text-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
-                  placeholder="搜索..."
+                  placeholder={t("gallery.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="border-border bg-surface focus:border-primary-start focus:ring-primary-start/20 w-full rounded-xl pl-10 focus:ring-2"
@@ -368,16 +379,20 @@ function GalleryContent() {
             <div className="from-primary-start/20 to-primary-end/20 mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br text-6xl">
               📁
             </div>
-            <h2 className="text-text-primary mb-2 text-2xl font-semibold">还没有作品</h2>
-            <p className="text-text-secondary mb-8 text-center text-sm">开始创作你的第一张图片吧</p>
+            <h2 className="text-text-primary mb-2 text-2xl font-semibold">
+              {t("gallery.noWorks")}
+            </h2>
+            <p className="text-text-secondary mb-8 text-center text-sm">
+              {t("gallery.noWorksDesc")}
+            </p>
             <Button
               onClick={() => router.push("/")}
               className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 rounded-xl bg-gradient-to-r px-8 py-3"
             >
-              去创作 →
+              {t("gallery.goCreate")}
             </Button>
             <p className="text-text-secondary mt-12 max-w-sm text-center text-xs">
-              你在基础生成、对话微调等模式创作的图片都会保存在这里
+              {t("gallery.noWorksHint")}
             </p>
           </div>
         ) : (

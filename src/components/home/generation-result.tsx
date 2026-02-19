@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "motion/react";
 import type { GeneratedImageInfo } from "@/lib/types";
+import { useTranslation } from "@/lib/i18n";
 
 interface GenerationResultProps {
   state: "generating" | "result";
@@ -29,6 +30,7 @@ export function GenerationResult({
   onCancel,
   showCancel,
 }: GenerationResultProps) {
+  const { t } = useTranslation();
   if (state === "generating") {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
@@ -40,7 +42,12 @@ export function GenerationResult({
           <Sparkles className="h-10 w-10 text-white" />
         </motion.div>
         <h3 className="text-text-primary mb-2 text-xl font-semibold">
-          {count > 1 ? `生成中 ${Math.floor((progress / 100) * count)}/${count}...` : "生成中"}
+          {count > 1
+            ? t("generation.generatingBatch", {
+                current: Math.floor((progress / 100) * count),
+                total: count,
+              })
+            : t("generation.generatingSimple")}
         </h3>
         <p className="text-text-secondary mb-2 text-sm">{progress}%</p>
         <div className="w-full max-w-md">
@@ -54,7 +61,7 @@ export function GenerationResult({
             className="text-text-secondary hover:text-destructive mt-4"
           >
             <X className="mr-1 h-4 w-4" />
-            取消生成
+            {t("generation.cancelGeneration")}
           </Button>
         )}
       </div>
@@ -84,7 +91,7 @@ export function GenerationResult({
               <div className="flex items-center gap-1.5">
                 <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white backdrop-blur">
                   {img.model_display_name
-                    ? `由 ${img.model_display_name} 生成`
+                    ? t("home.generatedBy", { name: img.model_display_name })
                     : [img.provider, img.model].filter(Boolean).join(" · ")}
                 </span>
               </div>
@@ -118,7 +125,7 @@ export function GenerationResult({
             onClick={onDownload}
           >
             <Download className="mr-2 h-4 w-4" />
-            下载
+            {t("common.download")}
           </Button>
           <Button
             size="sm"
@@ -126,7 +133,7 @@ export function GenerationResult({
             onClick={onEnlarge}
           >
             <Maximize2 className="mr-2 h-4 w-4" />
-            放大
+            {t("home.enlarge")}
           </Button>
         </div>
       </div>

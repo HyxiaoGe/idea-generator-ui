@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { SWRProvider } from "@/lib/swr-config";
+import { LanguageProvider } from "@/lib/i18n";
 import { QuotaProvider } from "@/lib/quota/quota-context";
 import { WebSocketProvider } from "@/lib/ws/ws-provider";
 import { Navigation } from "@/components/navigation";
@@ -37,17 +38,19 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <SWRProvider>
-              <QuotaProvider>
-                <WebSocketProvider>
-                  <div className="bg-background text-foreground min-h-screen transition-colors duration-300">
-                    <Suspense fallback={<NavigationFallback />}>
-                      <Navigation />
-                    </Suspense>
-                    <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-                    <Toaster />
-                  </div>
-                </WebSocketProvider>
-              </QuotaProvider>
+              <LanguageProvider>
+                <QuotaProvider>
+                  <WebSocketProvider>
+                    <div className="bg-background text-foreground min-h-screen transition-colors duration-300">
+                      <Suspense fallback={<NavigationFallback />}>
+                        <Navigation />
+                      </Suspense>
+                      <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+                      <Toaster />
+                    </div>
+                  </WebSocketProvider>
+                </QuotaProvider>
+              </LanguageProvider>
             </SWRProvider>
           </AuthProvider>
         </ThemeProvider>

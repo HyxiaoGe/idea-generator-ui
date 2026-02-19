@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { ImageLightbox, type LightboxSlide } from "@/components/image-lightbox";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuota } from "@/lib/quota/quota-context";
+import { useTranslation } from "@/lib/i18n";
 import type { HistoryItem } from "@/lib/types";
 import {
   formatRelativeTime,
@@ -34,6 +35,7 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
   const { checkBeforeGenerate, refreshQuota } = useQuota();
+  const { t } = useTranslation();
 
   const contentType = (searchParams.get("type") as "image" | "video") || "image";
   const templatePrompt = searchParams.get("prompt") || "";
@@ -107,8 +109,8 @@ function HomePageContent() {
   useEffect(() => {
     if (templatePrompt) {
       setPrompt(templatePrompt);
-      toast.success("模板已应用", {
-        description: "提示词已自动填充，可直接生成或修改",
+      toast.success(t("home.templateApplied"), {
+        description: t("home.templateAppliedDesc"),
       });
     }
   }, [templatePrompt]);
@@ -134,7 +136,7 @@ function HomePageContent() {
     if (!prompt) return;
 
     if (!isAuthenticated) {
-      toast.error("请先登录");
+      toast.error(t("home.pleaseLoginFirst"));
       router.push("/login");
       return;
     }
@@ -149,7 +151,7 @@ function HomePageContent() {
   const handleOptimizePrompt = useCallback(() => {
     imageGen.setEnhancePrompt((prev: boolean) => {
       const next = !prev;
-      toast.success(next ? "AI优化已开启" : "AI优化已关闭");
+      toast.success(next ? t("home.aiOptimizeEnabled") : t("home.aiOptimizeDisabled"));
       return next;
     });
   }, [imageGen]);
@@ -157,7 +159,7 @@ function HomePageContent() {
   const handleExampleClick = useCallback((templateId: string, displayName: string) => {
     setPrompt(displayName);
     setSelectedTemplateId(templateId);
-    toast.info("已选择模板");
+    toast.info(t("home.templateSelected"));
   }, []);
 
   const handlePromptChange = useCallback(
@@ -353,11 +355,12 @@ function HomePageContent() {
 }
 
 export default function HomePage() {
+  const { t } = useTranslation();
   return (
     <Suspense
       fallback={
         <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-          <div className="text-text-secondary">加载中...</div>
+          <div className="text-text-secondary">{t("common.loading")}</div>
         </div>
       }
     >

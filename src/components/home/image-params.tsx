@@ -10,6 +10,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ModelSelector } from "@/components/model-selector";
 import type { AspectRatio, QualityPreset } from "@/lib/types";
+import { useTranslation } from "@/lib/i18n";
 
 interface ImageParamsProps {
   qualityPreset: QualityPreset;
@@ -42,10 +43,11 @@ export function ImageParams({
   onSearchGroundingChange,
   isAuthenticated,
 }: ImageParamsProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="mb-4">
-        <label className="text-text-secondary mb-2 block text-xs">模型</label>
+        <label className="text-text-secondary mb-2 block text-xs">{t("params.model")}</label>
         <ModelSelector
           qualityPreset={qualityPreset}
           onPresetChange={onPresetChange}
@@ -57,7 +59,7 @@ export function ImageParams({
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <div>
-          <label className="text-text-secondary mb-2 block text-xs">分辨率</label>
+          <label className="text-text-secondary mb-2 block text-xs">{t("params.resolution")}</label>
           <Select value={resolution} onValueChange={onResolutionChange}>
             <SelectTrigger className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 h-9 rounded-xl text-sm focus:ring-2">
               <SelectValue />
@@ -71,7 +73,9 @@ export function ImageParams({
         </div>
 
         <div>
-          <label className="text-text-secondary mb-2 block text-xs">比例</label>
+          <label className="text-text-secondary mb-2 block text-xs">
+            {t("params.aspectRatio")}
+          </label>
           <Select value={aspectRatio} onValueChange={(v) => onAspectRatioChange(v as AspectRatio)}>
             <SelectTrigger className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 h-9 rounded-xl text-sm focus:ring-2">
               <SelectValue />
@@ -87,7 +91,7 @@ export function ImageParams({
         </div>
 
         <div>
-          <label className="text-text-secondary mb-2 block text-xs">数量</label>
+          <label className="text-text-secondary mb-2 block text-xs">{t("params.count")}</label>
           <Select value={count.toString()} onValueChange={(v) => onCountChange(parseInt(v))}>
             <SelectTrigger className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 h-9 rounded-xl text-sm focus:ring-2">
               <SelectValue />
@@ -112,17 +116,19 @@ export function ImageParams({
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-text-primary text-sm">🔍 搜索增强</span>
+              <span className="text-text-primary text-sm">🔍 {t("params.searchGrounding")}</span>
               {manualModel ? (
                 manualModel.includes("google") ? (
                   <span className="bg-accent/20 text-accent rounded-md px-2 py-0.5 text-xs">
-                    Gemini专属
+                    {t("params.geminiExclusive")}
                   </span>
                 ) : (
-                  <span className="text-text-secondary text-xs">当前模型不支持</span>
+                  <span className="text-text-secondary text-xs">
+                    {t("params.currentModelNotSupported")}
+                  </span>
                 )
               ) : (
-                <span className="text-text-secondary text-xs">预设模式下自动选择支持的模型</span>
+                <span className="text-text-secondary text-xs">{t("params.presetAutoSelect")}</span>
               )}
             </div>
             <Switch

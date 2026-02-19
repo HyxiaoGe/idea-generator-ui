@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useTheme } from "@/components/theme/theme-provider";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuota } from "@/lib/quota/quota-context";
+import { useTranslation } from "@/lib/i18n";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 
@@ -38,6 +39,7 @@ export function Navigation() {
   useEffect(() => setMounted(true), []);
   const { user, isAuthenticated, isLoading: authLoading, login, logout } = useAuth();
   const { quota: quotaData } = useQuota();
+  const { t } = useTranslation();
 
   const contentType = (searchParams.get("type") as "image" | "video") || "image";
   const isHomePage = pathname === "/";
@@ -61,7 +63,7 @@ export function Navigation() {
 
     toggleThemeWithAnimation(triggerPosition);
 
-    toast.success(theme === "dark" ? "已切换到浅色模式" : "已切换到深色模式", {
+    toast.success(theme === "dark" ? t("nav.switchedToLight") : t("nav.switchedToDark"), {
       duration: 2000,
     });
   };
@@ -89,7 +91,7 @@ export function Navigation() {
 
   const handleLogout = () => {
     logout();
-    toast.success("已退出登录");
+    toast.success(t("nav.loggedOut"));
     router.push("/");
   };
 
@@ -117,7 +119,7 @@ export function Navigation() {
             <ImageIcon className="h-5 w-5 text-white" />
           </motion.div>
           <span className="text-text-primary group-hover:from-primary-start group-hover:to-primary-end text-lg font-semibold transition-colors group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:text-transparent">
-            AI 创作工坊
+            {t("common.appName")}
           </span>
         </motion.button>
 
@@ -142,7 +144,7 @@ export function Navigation() {
                 />
               )}
               <ImageIcon className="relative z-10 h-4 w-4" />
-              <span className="relative z-10">图片生成</span>
+              <span className="relative z-10">{t("nav.imageGeneration")}</span>
             </motion.button>
             <motion.button
               onClick={() => handleContentTypeChange("video")}
@@ -162,7 +164,7 @@ export function Navigation() {
                 />
               )}
               <Video className="relative z-10 h-4 w-4" />
-              <span className="relative z-10">视频生成</span>
+              <span className="relative z-10">{t("nav.videoGeneration")}</span>
             </motion.button>
           </div>
         )}
@@ -194,7 +196,7 @@ export function Navigation() {
                 >
                   <Folder className="h-4 w-4" />
                 </motion.div>
-                <span className="hidden sm:inline">画廊</span>
+                <span className="hidden sm:inline">{t("nav.gallery")}</span>
                 {pathname === "/gallery" && (
                   <motion.div
                     layoutId="navIndicator"
@@ -228,7 +230,7 @@ export function Navigation() {
                 >
                   <BookTemplate className="h-4 w-4" />
                 </motion.div>
-                <span className="hidden sm:inline">模板</span>
+                <span className="hidden sm:inline">{t("nav.templates")}</span>
                 {pathname === "/templates" && (
                   <motion.div
                     layoutId="navIndicator"
@@ -250,10 +252,18 @@ export function Navigation() {
                 onClick={handleThemeToggle}
                 className="group text-text-secondary hover:bg-surface-secondary hover:text-text-primary relative rounded-lg transition-all"
                 aria-label={
-                  !mounted ? "切换主题" : theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
+                  !mounted
+                    ? t("nav.switchTheme")
+                    : theme === "dark"
+                      ? t("nav.switchToLight")
+                      : t("nav.switchToDark")
                 }
                 title={
-                  !mounted ? "切换主题" : theme === "dark" ? "切换到浅色模式" : "切换到深色模式"
+                  !mounted
+                    ? t("nav.switchTheme")
+                    : theme === "dark"
+                      ? t("nav.switchToLight")
+                      : t("nav.switchToDark")
                 }
               >
                 {mounted ? (
@@ -291,7 +301,7 @@ export function Navigation() {
                 variant="ghost"
                 size="icon"
                 onClick={() => handleNavigate("/settings")}
-                aria-label="设置"
+                aria-label={t("nav.settings")}
                 className={`group relative rounded-lg transition-all duration-200 ${
                   isSettingsActive
                     ? "from-primary-start/15 to-primary-end/15 text-primary-start shadow-primary-start/10 bg-gradient-to-r shadow-md"
@@ -320,7 +330,7 @@ export function Navigation() {
           <div className="md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="菜单">
+                <Button variant="ghost" size="icon" aria-label={t("nav.menu")}>
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -330,23 +340,26 @@ export function Navigation() {
                   onClick={() => handleNavigate("/gallery")}
                 >
                   <Folder className="mr-2 h-4 w-4" />
-                  画廊
+                  {t("nav.gallery")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => handleNavigate("/templates")}
                 >
                   <BookTemplate className="mr-2 h-4 w-4" />
-                  模板
+                  {t("nav.templates")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => {
                     toggleThemeWithAnimation({ x: window.innerWidth - 40, y: 32 });
-                    toast.success(theme === "dark" ? "已切换到浅色模式" : "已切换到深色模式", {
-                      duration: 2000,
-                    });
+                    toast.success(
+                      theme === "dark" ? t("nav.switchedToLight") : t("nav.switchedToDark"),
+                      {
+                        duration: 2000,
+                      }
+                    );
                   }}
                 >
                   {mounted && theme === "dark" ? (
@@ -354,14 +367,14 @@ export function Navigation() {
                   ) : (
                     <Moon className="mr-2 h-4 w-4" />
                   )}
-                  切换主题
+                  {t("nav.switchTheme")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => handleNavigate("/settings")}
                 >
                   <Settings className="mr-2 h-4 w-4" />
-                  设置
+                  {t("nav.settings")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -434,28 +447,28 @@ export function Navigation() {
                     onClick={() => handleNavigate("/gallery")}
                   >
                     <Folder className="mr-2 h-4 w-4" />
-                    画廊
+                    {t("nav.gallery")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
                     onClick={() => handleNavigate("/templates")}
                   >
                     <BookTemplate className="mr-2 h-4 w-4" />
-                    模板
+                    {t("nav.templates")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-text-secondary focus:bg-surface-elevated focus:text-text-primary cursor-pointer"
                     onClick={() => handleNavigate("/settings")}
                   >
                     <Settings className="mr-2 h-4 w-4" />
-                    设置
+                    {t("nav.settings")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-border" />
                   <DropdownMenuItem
                     className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-400"
                     onClick={handleLogout}
                   >
-                    退出登录
+                    {t("common.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -467,7 +480,7 @@ export function Navigation() {
                 className="text-text-secondary hover:bg-surface-secondary hover:text-text-primary flex items-center gap-2 rounded-lg"
               >
                 <LogIn className="h-4 w-4" />
-                <span className="hidden sm:inline">登录</span>
+                <span className="hidden sm:inline">{t("common.login")}</span>
               </Button>
             )}
           </div>

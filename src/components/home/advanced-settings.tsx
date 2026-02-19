@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "motion/react";
+import { useTranslation } from "@/lib/i18n";
 
 interface AdvancedSettingsProps {
   showAdvanced: boolean;
@@ -25,6 +26,7 @@ export function AdvancedSettings({
   negativePrompt,
   onNegativePromptChange,
 }: AdvancedSettingsProps) {
+  const { t } = useTranslation();
   return (
     <>
       <Button
@@ -33,7 +35,7 @@ export function AdvancedSettings({
         onClick={onToggleAdvanced}
         className="text-text-secondary hover:text-text-primary w-full"
       >
-        <span className="mr-2 text-xs">⚙️ 高级</span>
+        <span className="mr-2 text-xs">⚙️ {t("params.advanced")}</span>
         {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </Button>
 
@@ -47,19 +49,19 @@ export function AdvancedSettings({
           >
             <div className="border-border mt-4 space-y-4 border-t pt-4">
               <div>
-                <label className="text-text-secondary mb-2 block text-xs">随机种子</label>
+                <label className="text-text-secondary mb-2 block text-xs">{t("params.seed")}</label>
                 <div className="flex gap-2">
                   <Input
                     value={seed}
                     onChange={(e) => onSeedChange(e.target.value)}
-                    placeholder="留空随机生成"
+                    placeholder={t("params.seedPlaceholder")}
                     className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 flex-1 rounded-xl focus:ring-2"
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={onRandomSeed}
-                    aria-label="随机种子"
+                    aria-label={t("params.seed")}
                     className="border-border bg-surface-elevated rounded-xl"
                   >
                     <Dices className="h-4 w-4" />
@@ -69,7 +71,7 @@ export function AdvancedSettings({
 
               <div>
                 <label className="text-text-secondary mb-2 flex items-center justify-between text-xs">
-                  <span>引导强度</span>
+                  <span>{t("params.guidanceStrength")}</span>
                   <span className="text-text-primary">7.5</span>
                 </label>
                 <input
@@ -83,9 +85,11 @@ export function AdvancedSettings({
               </div>
 
               <div>
-                <label className="text-text-secondary mb-2 block text-xs">负面提示词</label>
+                <label className="text-text-secondary mb-2 block text-xs">
+                  {t("params.negativePrompt")}
+                </label>
                 <Textarea
-                  placeholder="例如：模糊, 低质量, 变形, 水印..."
+                  placeholder={t("params.negativePromptPlaceholder")}
                   value={negativePrompt}
                   onChange={(e) => onNegativePromptChange(e.target.value)}
                   className="border-border bg-surface-elevated focus:border-primary-start focus:ring-primary-start/20 min-h-[60px] resize-none rounded-xl focus:ring-2"

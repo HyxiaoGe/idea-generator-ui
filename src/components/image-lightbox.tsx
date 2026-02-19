@@ -9,6 +9,7 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Video from "yet-another-react-lightbox/plugins/video";
 import { Download, Heart, RotateCw, Trash2 } from "lucide-react";
 import type { HistoryItem } from "@/lib/types";
+import { useTranslation } from "@/lib/i18n";
 
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
@@ -63,6 +64,8 @@ export function ImageLightbox({
   onRegenerate,
   onDownload,
 }: ImageLightboxProps) {
+  const { t } = useTranslation();
+
   // Track current index via on.view for toolbar buttons.
   // This does NOT feed back into YARL's index prop — YARL manages navigation internally.
   const [currentIndex, setCurrentIndex] = useState(index);
@@ -118,7 +121,7 @@ export function ImageLightbox({
       <ToolbarButton
         key="favorite"
         icon={Heart}
-        label={currentItem.favorite ? "取消收藏" : "收藏"}
+        label={currentItem.favorite ? t("lightbox.unfavorite") : t("lightbox.favorite")}
         onClick={handleFavorite}
         className={currentItem.favorite ? "fill-red-500 text-red-500" : "text-white"}
       />
@@ -126,12 +129,22 @@ export function ImageLightbox({
   }
 
   toolbarButtons.push(
-    <ToolbarButton key="download" icon={Download} label="下载" onClick={handleDownload} />
+    <ToolbarButton
+      key="download"
+      icon={Download}
+      label={t("lightbox.download")}
+      onClick={handleDownload}
+    />
   );
 
   if (onRegenerate && currentItem) {
     toolbarButtons.push(
-      <ToolbarButton key="regenerate" icon={RotateCw} label="重新生成" onClick={handleRegenerate} />
+      <ToolbarButton
+        key="regenerate"
+        icon={RotateCw}
+        label={t("lightbox.regenerate")}
+        onClick={handleRegenerate}
+      />
     );
   }
 
@@ -140,7 +153,7 @@ export function ImageLightbox({
       <ToolbarButton
         key="delete"
         icon={Trash2}
-        label="删除"
+        label={t("lightbox.delete")}
         onClick={handleDelete}
         className="text-red-400"
       />
@@ -182,9 +195,9 @@ export function ImageLightbox({
         } as Record<string, string>,
       }}
       labels={{
-        Previous: "上一张",
-        Next: "下一张",
-        Close: "关闭",
+        Previous: t("lightbox.previous"),
+        Next: t("lightbox.next"),
+        Close: t("lightbox.close"),
       }}
     />
   );

@@ -33,12 +33,14 @@ import { getApiClient } from "@/lib/api-client";
 import { showErrorToast } from "@/lib/error-toast";
 import { getProviderAndModel, getImageUrl } from "@/lib/transforms";
 import { useQuota } from "@/lib/quota/quota-context";
+import { useTranslation } from "@/lib/i18n";
 import type { ProviderInfo } from "@/lib/types";
 
 export default function ImageToVideoPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { checkBeforeGenerate, refreshQuota } = useQuota();
+  const { t } = useTranslation();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
   const [fileSize, setFileSize] = useState("");
@@ -83,7 +85,7 @@ export default function ImageToVideoPage() {
         setFileName(file.name);
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
         setFileSize(`${sizeMB} MB`);
-        toast.success("图片上传成功");
+        toast.success(t("imageToVideo.imageUploaded"));
       };
       reader.readAsDataURL(file);
     }
@@ -91,7 +93,7 @@ export default function ImageToVideoPage() {
 
   const handleGenerate = useCallback(async () => {
     if (!uploadedImage) {
-      toast.error("请先上传图片");
+      toast.error(t("imageToVideo.pleaseUploadFirst"));
       return;
     }
 
@@ -139,24 +141,24 @@ export default function ImageToVideoPage() {
             setResultVideoUrl(videoUrl);
             setState("result");
             refreshQuota();
-            toast.success("视频生成完成！");
+            toast.success(t("generation.videoComplete"));
           } else if (taskProgress.status === "failed") {
             clearInterval(pollInterval);
             setState("idle");
-            toast.error("生成失败", {
-              description: taskProgress.errors.join(", ") || "请重试",
+            toast.error(t("generation.failed"), {
+              description: taskProgress.errors.join(", ") || t("common.retry"),
             });
           }
         } catch {
           clearInterval(pollInterval);
           setState("idle");
-          toast.error("获取进度失败");
+          toast.error(t("imageToVideo.progressFailed"));
         }
       }, 2000);
     } catch (error) {
       setState("idle");
       setProgress(0);
-      showErrorToast(error, "生成失败");
+      showErrorToast(error, t("generation.failed"));
     }
   }, [uploadedImage, model, motionDescription, checkBeforeGenerate, refreshQuota]);
 
@@ -175,8 +177,8 @@ export default function ImageToVideoPage() {
         <div className="mb-8 flex items-center gap-4">
           <BackButton onClick={() => router.push("/")} />
           <div>
-            <h1 className="text-text-primary text-2xl font-semibold">图生视频</h1>
-            <p className="text-text-secondary text-sm">将静态图片转换为动态视频</p>
+            <h1 className="text-text-primary text-2xl font-semibold">{t("imageToVideo.title")}</h1>
+            <p className="text-text-secondary text-sm">{t("imageToVideo.subtitle")}</p>
           </div>
         </div>
 
@@ -187,7 +189,9 @@ export default function ImageToVideoPage() {
             {state === "result" ? (
               /* Video Player */
               <div>
-                <h3 className="text-text-primary mb-4 font-semibold">生成结果</h3>
+                <h3 className="text-text-primary mb-4 font-semibold">
+                  {t("imageToVideo.generationResult")}
+                </h3>
                 <div className="group bg-background relative aspect-video overflow-hidden rounded-xl">
                   {resultVideoUrl ? (
                     <video
@@ -220,7 +224,7 @@ export default function ImageToVideoPage() {
                     }}
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    下载视频
+                    {t("imageToVideo.downloadVideo")}
                   </Button>
                   <Button
                     variant="outline"
@@ -232,7 +236,7 @@ export default function ImageToVideoPage() {
                     className="rounded-xl"
                   >
                     <RotateCw className="mr-2 h-4 w-4" />
-                    重新生成
+                    {t("chat.regenerate")}
                   </Button>
                 </div>
               </div>
@@ -246,7 +250,9 @@ export default function ImageToVideoPage() {
                 >
                   <Upload className="h-10 w-10 text-white" />
                 </motion.div>
-                <h3 className="text-text-primary mb-2 text-xl font-semibold">生成视频中</h3>
+                <h3 className="text-text-primary mb-2 text-xl font-semibold">
+                  {t("imageToVideo.generatingVideo")}
+                </h3>
                 <p className="text-text-secondary mb-6 text-sm">{progress}%</p>
                 <div className="w-full max-w-md">
                   <Progress value={progress} className="h-2" />
@@ -255,15 +261,19 @@ export default function ImageToVideoPage() {
             ) : (
               /* Upload State */
               <div>
-                <h3 className="text-text-primary mb-4 font-semibold">上传图片</h3>
+                <h3 className="text-text-primary mb-4 font-semibold">
+                  {t("imageToVideo.uploadImage")}
+                </h3>
                 {!uploadedImage ? (
                   <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
                     <div className="from-primary-start/20 to-primary-end/20 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br">
                       <Upload className="text-primary-start h-8 w-8" />
                     </div>
-                    <p className="text-text-primary mb-1 text-sm font-medium">上传一张图片</p>
+                    <p className="text-text-primary mb-1 text-sm font-medium">
+                      {t("imageToVideo.uploadImageLabel")}
+                    </p>
                     <p className="text-text-secondary text-xs">
-                      支持 PNG, JPG，建议 1024x1024 以上
+                      {t("imageToVideo.uploadImageHint")}
                     </p>
                     <input
                       type="file"
@@ -301,14 +311,18 @@ export default function ImageToVideoPage() {
 
           {/* Right Column - Parameters */}
           <div className="border-border bg-surface rounded-2xl border p-6">
-            <h3 className="text-text-primary mb-4 font-semibold">参数设置</h3>
+            <h3 className="text-text-primary mb-4 font-semibold">
+              {t("imageToVideo.paramSettings")}
+            </h3>
 
             <div className="space-y-4">
               {/* Motion Description */}
               <div>
-                <label className="text-text-secondary mb-2 block text-sm">描述画面如何运动</label>
+                <label className="text-text-secondary mb-2 block text-sm">
+                  {t("imageToVideo.motionDesc")}
+                </label>
                 <Textarea
-                  placeholder="例如：镜头缓缓推进，花瓣随风飘落..."
+                  placeholder={t("imageToVideo.motionDescPlaceholder")}
                   value={motionDescription}
                   onChange={(e) => setMotionDescription(e.target.value)}
                   className="min-h-[120px] resize-none rounded-xl"
@@ -318,51 +332,59 @@ export default function ImageToVideoPage() {
               {/* Parameters Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-text-secondary mb-2 block text-sm">时长</label>
+                  <label className="text-text-secondary mb-2 block text-sm">
+                    {t("params.duration")}
+                  </label>
                   <Select value={duration} onValueChange={setDuration}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2">2秒</SelectItem>
-                      <SelectItem value="4">4秒</SelectItem>
-                      <SelectItem value="6">6秒</SelectItem>
+                      <SelectItem value="2">{t("params.durationSeconds", { n: 2 })}</SelectItem>
+                      <SelectItem value="4">{t("params.durationSeconds", { n: 4 })}</SelectItem>
+                      <SelectItem value="6">{t("params.durationSeconds", { n: 6 })}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-text-secondary mb-2 block text-sm">运动强度</label>
+                  <label className="text-text-secondary mb-2 block text-sm">
+                    {t("params.motionStrength")}
+                  </label>
                   <Select value={motionStrength} onValueChange={setMotionStrength}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">低</SelectItem>
-                      <SelectItem value="medium">中</SelectItem>
-                      <SelectItem value="high">高</SelectItem>
+                      <SelectItem value="low">{t("params.low")}</SelectItem>
+                      <SelectItem value="medium">{t("params.medium")}</SelectItem>
+                      <SelectItem value="high">{t("params.high")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-text-secondary mb-2 block text-sm">相机运动</label>
+                  <label className="text-text-secondary mb-2 block text-sm">
+                    {t("imageToVideo.cameraMotion")}
+                  </label>
                   <Select value={cameraMotion} onValueChange={setCameraMotion}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">无</SelectItem>
-                      <SelectItem value="push">推进</SelectItem>
-                      <SelectItem value="pull">拉远</SelectItem>
-                      <SelectItem value="pan">平移</SelectItem>
-                      <SelectItem value="orbit">环绕</SelectItem>
+                      <SelectItem value="none">{t("imageToVideo.cameraNone")}</SelectItem>
+                      <SelectItem value="push">{t("imageToVideo.cameraPush")}</SelectItem>
+                      <SelectItem value="pull">{t("imageToVideo.cameraPull")}</SelectItem>
+                      <SelectItem value="pan">{t("imageToVideo.cameraPan")}</SelectItem>
+                      <SelectItem value="orbit">{t("imageToVideo.cameraOrbit")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-text-secondary mb-2 block text-sm">模型</label>
+                  <label className="text-text-secondary mb-2 block text-sm">
+                    {t("params.model")}
+                  </label>
                   <Select value={model} onValueChange={setModel}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
@@ -384,17 +406,21 @@ export default function ImageToVideoPage() {
                 disabled={!uploadedImage || state === "generating"}
                 className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 w-full rounded-xl bg-gradient-to-r py-6 disabled:opacity-50"
               >
-                {state === "generating" ? "生成中..." : "生成视频"}
+                {state === "generating"
+                  ? t("common.generating") + "..."
+                  : t("imageToVideo.generateVideo")}
               </Button>
 
               {/* Tips */}
               <div className="border-border bg-surface-secondary rounded-xl border p-4">
-                <h4 className="text-text-primary mb-2 text-sm font-medium">提示</h4>
+                <h4 className="text-text-primary mb-2 text-sm font-medium">
+                  {t("imageToVideo.tipsTitle")}
+                </h4>
                 <ul className="text-text-secondary space-y-1 text-xs">
-                  <li>• 清晰描述运动方向和速度可以获得更好效果</li>
-                  <li>• 建议上传高分辨率图片（1024x1024 或更高）</li>
-                  <li>• 相机运动会增加视频的动态感</li>
-                  <li>• 运动强度越高，画面变化越明显</li>
+                  <li>• {t("imageToVideo.tip1")}</li>
+                  <li>• {t("imageToVideo.tip2")}</li>
+                  <li>• {t("imageToVideo.tip3")}</li>
+                  <li>• {t("imageToVideo.tip4")}</li>
                 </ul>
               </div>
             </div>
