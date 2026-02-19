@@ -113,9 +113,9 @@ export function VideoParams({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="16:9">16:9</SelectItem>
-            <SelectItem value="9:16">9:16</SelectItem>
-            <SelectItem value="1:1">1:1</SelectItem>
+            <SelectItem value="16:9">16:9 {t("enums.videoAspectRatio.16:9")}</SelectItem>
+            <SelectItem value="9:16">9:16 {t("enums.videoAspectRatio.9:16")}</SelectItem>
+            <SelectItem value="1:1">1:1 {t("enums.videoAspectRatio.1:1")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

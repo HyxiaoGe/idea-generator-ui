@@ -19,15 +19,18 @@ import {
 // Hooks
 import { useImageGeneration } from "@/lib/hooks/use-image-generation";
 import { useVideoGeneration } from "@/lib/hooks/use-video-generation";
-import { useExamplePrompts } from "@/lib/hooks/use-example-prompts";
+import { useTemplateBrowse } from "@/lib/hooks/use-template-browse";
 
 // Components
-import { PreviewPanel } from "@/components/home/preview-panel";
-import { PromptInput } from "@/components/home/prompt-input";
+import { SearchPromptBar } from "@/components/home/search-prompt-bar";
+import { CollapsibleParams } from "@/components/home/collapsible-params";
 import { ImageParams } from "@/components/home/image-params";
 import { VideoParams } from "@/components/home/video-params";
 import { AdvancedSettings } from "@/components/home/advanced-settings";
-import { ModeCards } from "@/components/home/mode-cards";
+import { ModeChips } from "@/components/home/mode-chips";
+import { TemplateMasonryGrid } from "@/components/home/template-masonry-grid";
+import { TemplateDetailModal } from "@/components/home/template-detail-modal";
+import { GenerationOverlay } from "@/components/home/generation-overlay";
 import { RecentGenerations } from "@/components/home/recent-generations";
 
 function HomePageContent() {
@@ -44,8 +47,14 @@ function HomePageContent() {
   const [prompt, setPrompt] = useState(templatePrompt);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showParams, setShowParams] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Modal state
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedTemplateForDetail, setSelectedTemplateForDetail] = useState<string | null>(null);
+  const [generationOverlayOpen, setGenerationOverlayOpen] = useState(false);
 
   // History SWR (shared between hooks and recent panel)
   const {
@@ -70,8 +79,8 @@ function HomePageContent() {
     },
   });
 
-  // Example prompts hook
-  const prompts = useExamplePrompts(isAuthenticated);
+  // Template browse hook
+  const templateBrowse = useTemplateBrowse({ isAuthenticated, contentType });
 
   // Active generation based on contentType
   const activeGen = contentType === "image" ? imageGen : videoGen;
@@ -113,23 +122,15 @@ function HomePageContent() {
         description: t("home.templateAppliedDesc"),
       });
     }
-  }, [templatePrompt]);
+  }, [templatePrompt]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleNavigate = useCallback(
-    (path: string, options?: Record<string, string | number | boolean>) => {
-      if (options) {
-        const params = new URLSearchParams();
-        Object.entries(options).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            params.set(key, String(value));
-          }
-        });
-        router.push(`${path}?${params.toString()}`);
-      } else {
-        router.push(path);
-      }
+  const handleContentTypeChange = useCallback(
+    (type: "image" | "video") => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("type", type);
+      router.push(`/?${params.toString()}`);
     },
-    [router]
+    [router, searchParams]
   );
 
   const handleGenerate = useCallback(async () => {
@@ -144,9 +145,10 @@ function HomePageContent() {
     const allowed = await checkBeforeGenerate();
     if (!allowed) return;
 
+    setGenerationOverlayOpen(true);
     activeGen.generate(prompt, selectedTemplateId);
     setSelectedTemplateId(null);
-  }, [prompt, isAuthenticated, checkBeforeGenerate, activeGen, selectedTemplateId, router]);
+  }, [prompt, isAuthenticated, checkBeforeGenerate, activeGen, selectedTemplateId, router, t]);
 
   const handleOptimizePrompt = useCallback(() => {
     imageGen.setEnhancePrompt((prev: boolean) => {
@@ -154,13 +156,41 @@ function HomePageContent() {
       toast.success(next ? t("home.aiOptimizeEnabled") : t("home.aiOptimizeDisabled"));
       return next;
     });
-  }, [imageGen]);
+  }, [imageGen, t]);
 
-  const handleExampleClick = useCallback((templateId: string, displayName: string) => {
-    setPrompt(displayName);
-    setSelectedTemplateId(templateId);
-    toast.info(t("home.templateSelected"));
+  const handleTemplateClick = useCallback((template: { id: string }) => {
+    setSelectedTemplateForDetail(template.id);
+    setDetailModalOpen(true);
   }, []);
+
+  const handleGenerateFromTemplate = useCallback(
+    async (templateId: string) => {
+      if (!isAuthenticated) {
+        toast.error(t("home.pleaseLoginFirst"));
+        router.push("/login");
+        return;
+      }
+
+      const allowed = await checkBeforeGenerate();
+      if (!allowed) return;
+
+      // Fetch template detail to get prompt_text
+      try {
+        const { getApiClient } = await import("@/lib/api-client");
+        const api = getApiClient();
+        const detail = await api.useTemplate(templateId);
+
+        setDetailModalOpen(false);
+        setPrompt(detail.prompt_text);
+        setSelectedTemplateId(templateId);
+        setGenerationOverlayOpen(true);
+        activeGen.generate(detail.prompt_text, templateId);
+      } catch {
+        toast.error(t("common.operationFailed"));
+      }
+    },
+    [isAuthenticated, checkBeforeGenerate, activeGen, router, t]
+  );
 
   const handlePromptChange = useCallback(
     (value: string) => {
@@ -174,6 +204,13 @@ function HomePageContent() {
     setSelectedTemplateId(null);
     setPrompt("");
   }, []);
+
+  // Open generation overlay when generation starts (e.g. from URL template prompt)
+  useEffect(() => {
+    if (activeGen.isGenerating && !generationOverlayOpen) {
+      setGenerationOverlayOpen(true);
+    }
+  }, [activeGen.isGenerating]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lightbox slides for generated images
   const lightboxSlides: LightboxSlide[] = useMemo(
@@ -242,35 +279,9 @@ function HomePageContent() {
   );
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 py-8">
-      {/* Preview Section */}
-      <PreviewPanel
-        contentType={contentType}
-        state={activeGen.state}
-        progress={activeGen.progress}
-        count={contentType === "image" ? imageGen.count : 1}
-        generatedImages={activeGen.generatedImages}
-        selectedImageIndex={selectedImageIndex}
-        examplePrompts={prompts.examplePrompts}
-        promptPage={prompts.promptPage}
-        totalPages={prompts.totalPages}
-        onPromptSelect={handleExampleClick}
-        onPageChange={prompts.setPromptPage}
-        onPauseChange={prompts.setPromptPaused}
-        onImageSelect={setSelectedImageIndex}
-        onDownload={() => {
-          const link = document.createElement("a");
-          link.href = activeGen.generatedImages[selectedImageIndex].url;
-          link.download = `generated-${Date.now()}.png`;
-          link.click();
-        }}
-        onEnlarge={() => setLightboxOpen(true)}
-        onCancel={activeGen.cancel}
-        showCancel={activeGen.isGenerating && (contentType === "video" || imageGen.count > 1)}
-      />
-
-      {/* Prompt Input */}
-      <PromptInput
+    <div className="mx-auto max-w-screen-xl px-6 py-6">
+      {/* Search Prompt Bar */}
+      <SearchPromptBar
         prompt={prompt}
         onPromptChange={handlePromptChange}
         selectedTemplateId={selectedTemplateId}
@@ -278,12 +289,20 @@ function HomePageContent() {
         enhancePrompt={imageGen.enhancePrompt}
         onToggleEnhance={handleOptimizePrompt}
         onGenerate={handleGenerate}
-        onNavigateTemplates={() => handleNavigate("/templates")}
         isGenerating={activeGen.isGenerating}
+        showParams={showParams}
+        onToggleParams={() => setShowParams(!showParams)}
+        contentType={contentType}
+        onContentTypeChange={handleContentTypeChange}
+        categories={templateBrowse.categories}
+        selectedCategory={templateBrowse.selectedCategory}
+        onCategoryChange={templateBrowse.setSelectedCategory}
+        searchQuery={templateBrowse.searchQuery}
+        onSearchQueryChange={templateBrowse.setSearchQuery}
       />
 
-      {/* Parameters Row */}
-      <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
+      {/* Collapsible Parameters */}
+      <CollapsibleParams open={showParams}>
         {contentType === "image" ? (
           <ImageParams
             qualityPreset={imageGen.qualityPreset}
@@ -327,20 +346,69 @@ function HomePageContent() {
           negativePrompt={imageGen.negativePrompt}
           onNegativePromptChange={imageGen.setNegativePrompt}
         />
-      </div>
+      </CollapsibleParams>
 
-      {/* Mode Cards */}
-      <ModeCards contentType={contentType} onNavigate={(path) => handleNavigate(path)} />
+      {/* Mode Chips */}
+      <ModeChips contentType={contentType} />
+
+      {/* Template Masonry Grid (main content, image only) */}
+      {contentType === "image" && (
+        <TemplateMasonryGrid
+          templates={templateBrowse.templates}
+          lang={templateBrowse.lang}
+          isLoading={templateBrowse.isLoading}
+          isLoadingMore={templateBrowse.isLoadingMore}
+          hasMore={templateBrowse.hasMore}
+          isFavoritedTab={templateBrowse.selectedCategory === "favorites"}
+          isAuthenticated={isAuthenticated}
+          onLoadMore={templateBrowse.loadMore}
+          onTemplateClick={handleTemplateClick}
+          onToggleFavorite={templateBrowse.toggleFavorite}
+        />
+      )}
 
       {/* Recent Generations */}
-      <RecentGenerations
-        contentType={contentType}
-        filteredRecent={filteredRecent}
-        isLoading={isLoadingRecent}
+      <div className="mt-8">
+        <RecentGenerations
+          contentType={contentType}
+          filteredRecent={filteredRecent}
+          isLoading={isLoadingRecent}
+          isAuthenticated={isAuthenticated}
+          hasAnyRecent={recentGenerations.length > 0}
+          lightboxSlides={recentLightboxSlides}
+          onNavigateGallery={() => router.push(`/gallery?type=${contentType}`)}
+        />
+      </div>
+
+      {/* Template Detail Modal */}
+      <TemplateDetailModal
+        templateId={selectedTemplateForDetail}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        lang={templateBrowse.lang}
         isAuthenticated={isAuthenticated}
-        hasAnyRecent={recentGenerations.length > 0}
-        lightboxSlides={recentLightboxSlides}
-        onNavigateGallery={() => handleNavigate("/gallery", { type: contentType })}
+        onGenerate={handleGenerateFromTemplate}
+      />
+
+      {/* Generation Overlay */}
+      <GenerationOverlay
+        open={generationOverlayOpen}
+        onOpenChange={setGenerationOverlayOpen}
+        state={activeGen.state as "generating" | "result"}
+        progress={activeGen.progress}
+        count={contentType === "image" ? imageGen.count : 1}
+        generatedImages={activeGen.generatedImages}
+        selectedImageIndex={selectedImageIndex}
+        onImageSelect={setSelectedImageIndex}
+        onDownload={() => {
+          const link = document.createElement("a");
+          link.href = activeGen.generatedImages[selectedImageIndex].url;
+          link.download = `generated-${Date.now()}.png`;
+          link.click();
+        }}
+        onEnlarge={() => setLightboxOpen(true)}
+        onCancel={activeGen.cancel}
+        showCancel={activeGen.isGenerating && (contentType === "video" || imageGen.count > 1)}
       />
 
       {/* Lightbox for generated images */}

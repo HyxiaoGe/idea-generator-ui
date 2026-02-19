@@ -30,6 +30,7 @@ export interface TranslationKeys {
     imageGeneration: string;
     videoGeneration: string;
     gallery: string;
+    myWorks: string;
     templates: string;
     settings: string;
     switchTheme: string;
@@ -71,6 +72,11 @@ export interface TranslationKeys {
     resultWillShow: string;
     generatedBy: string;
     enlarge: string;
+    searchPlaceholder: string;
+    loginToGenerate: string;
+    generateWithTemplate: string;
+    showParams: string;
+    hideParams: string;
   };
   params: {
     model: string;
@@ -367,9 +373,124 @@ export interface TranslationKeys {
     cancelGeneration: string;
   };
   recentGenerations: {
+    title: string;
     titleImage: string;
     titleVideo: string;
     noRecords: string;
     loginToView: string;
+  };
+  enums: {
+    aspectRatio: {
+      "1:1": string;
+      "16:9": string;
+      "9:16": string;
+      "4:3": string;
+      "3:4": string;
+    };
+    resolution: {
+      "1K": string;
+      "2K": string;
+      "4K": string;
+    };
+    safetyLevel: {
+      strict: string;
+      moderate: string;
+      relaxed: string;
+      none: string;
+    };
+    generationMode: {
+      basic: string;
+      chat: string;
+      batch: string;
+      blend: string;
+      style: string;
+      search: string;
+    };
+    videoResolution: {
+      "480p": string;
+      "720p": string;
+      "1080p": string;
+      "4K": string;
+    };
+    videoAspectRatio: {
+      "1:1": string;
+      "16:9": string;
+      "9:16": string;
+      "21:9": string;
+      "4:5": string;
+    };
+    videoTaskStatus: {
+      queued: string;
+      processing: string;
+      completed: string;
+      failed: string;
+      cancelled: string;
+    };
+    notificationType: {
+      system: string;
+      task_complete: string;
+      task_failed: string;
+      quota_warning: string;
+      quota_reset: string;
+      announcement: string;
+      feature: string;
+    };
+    theme: {
+      system: string;
+      light: string;
+      dark: string;
+    };
+    language: {
+      "zh-CN": string;
+      en: string;
+      ja: string;
+    };
+    hourCycle: {
+      auto: string;
+      h12: string;
+      h23: string;
+    };
+    routingStrategy: {
+      priority: string;
+      cost: string;
+      quality: string;
+      speed: string;
+      round_robin: string;
+      adaptive: string;
+    };
+    templateDifficulty: {
+      beginner: string;
+      intermediate: string;
+      advanced: string;
+    };
+    templateSource: {
+      curated: string;
+      ai_generated: string;
+      user: string;
+    };
+    templateCategory: {
+      portrait: string;
+      landscape: string;
+      illustration: string;
+      product: string;
+      architecture: string;
+      anime: string;
+      fantasy: string;
+      "graphic-design": string;
+      food: string;
+      abstract: string;
+    };
+    bulkAction: {
+      add: string;
+      remove: string;
+      move: string;
+    };
+    searchResultType: {
+      image: string;
+      prompt: string;
+      template: string;
+      project: string;
+      chat: string;
+    };
   };
 }

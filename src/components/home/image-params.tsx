@@ -81,11 +81,11 @@ export function ImageParams({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1:1">1:1</SelectItem>
-              <SelectItem value="16:9">16:9</SelectItem>
-              <SelectItem value="9:16">9:16</SelectItem>
-              <SelectItem value="4:3">4:3</SelectItem>
-              <SelectItem value="3:4">3:4</SelectItem>
+              <SelectItem value="1:1">1:1 {t("enums.aspectRatio.1:1")}</SelectItem>
+              <SelectItem value="16:9">16:9 {t("enums.aspectRatio.16:9")}</SelectItem>
+              <SelectItem value="9:16">9:16 {t("enums.aspectRatio.9:16")}</SelectItem>
+              <SelectItem value="4:3">4:3 {t("enums.aspectRatio.4:3")}</SelectItem>
+              <SelectItem value="3:4">3:4 {t("enums.aspectRatio.3:4")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
