@@ -1,18 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Settings,
-  ImageIcon,
-  Video,
-  Folder,
-  BookTemplate,
-  Sun,
-  Moon,
-  LogIn,
-  Menu,
-} from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Settings, ImageIcon, Folder, Sun, Moon, LogIn, Menu } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -33,7 +23,6 @@ import { motion } from "motion/react";
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { theme, toggleThemeWithAnimation } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -41,17 +30,8 @@ export function Navigation() {
   const { quota: quotaData } = useQuota();
   const { t } = useTranslation();
 
-  const contentType = (searchParams.get("type") as "image" | "video") || "image";
-  const isHomePage = pathname === "/";
-
   const handleNavigate = (path: string) => {
     router.push(path);
-  };
-
-  const handleContentTypeChange = (type: "image" | "video") => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("type", type);
-    router.push(`/?${params.toString()}`);
   };
 
   const handleThemeToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -123,52 +103,6 @@ export function Navigation() {
           </span>
         </motion.button>
 
-        {/* Center: Content Type Tabs (only on home page) */}
-        {isHomePage && (
-          <div className="bg-surface flex items-center gap-1 rounded-xl p-1 shadow-sm">
-            <motion.button
-              onClick={() => handleContentTypeChange("image")}
-              className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-sm font-medium transition-all duration-200 ${
-                contentType === "image"
-                  ? "text-white"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-              whileHover={{ scale: contentType !== "image" ? 1.02 : 1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {contentType === "image" && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="from-primary-start to-primary-end shadow-primary-start/30 absolute inset-0 rounded-lg bg-gradient-to-r shadow-lg"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <ImageIcon className="relative z-10 h-4 w-4" />
-              <span className="relative z-10">{t("nav.imageGeneration")}</span>
-            </motion.button>
-            <motion.button
-              onClick={() => handleContentTypeChange("video")}
-              className={`relative flex items-center gap-2 rounded-lg px-6 py-2 text-sm font-medium transition-all duration-200 ${
-                contentType === "video"
-                  ? "text-white"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-              whileHover={{ scale: contentType !== "video" ? 1.02 : 1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {contentType === "video" && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="from-primary-start to-primary-end shadow-primary-start/30 absolute inset-0 rounded-lg bg-gradient-to-r shadow-lg"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <Video className="relative z-10 h-4 w-4" />
-              <span className="relative z-10">{t("nav.videoGeneration")}</span>
-            </motion.button>
-          </div>
-        )}
-
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {/* Desktop nav items — hidden below md */}
@@ -196,42 +130,8 @@ export function Navigation() {
                 >
                   <Folder className="h-4 w-4" />
                 </motion.div>
-                <span className="hidden sm:inline">{t("nav.gallery")}</span>
+                <span className="hidden sm:inline">{t("nav.myWorks")}</span>
                 {pathname === "/gallery" && (
-                  <motion.div
-                    layoutId="navIndicator"
-                    className="from-primary-start to-primary-end shadow-primary-start/50 absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r shadow-sm"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-              </Button>
-            </motion.div>
-
-            {/* Templates Button */}
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="ghost"
-                onClick={() => handleNavigate("/templates")}
-                className={`relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 ${
-                  pathname === "/templates"
-                    ? "from-primary-start/15 to-primary-end/15 text-primary-start shadow-primary-start/10 bg-gradient-to-r shadow-md"
-                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
-                }`}
-              >
-                <motion.div
-                  animate={
-                    pathname === "/templates"
-                      ? {
-                          scale: [1, 1.1, 1],
-                        }
-                      : {}
-                  }
-                  transition={{ duration: 0.3 }}
-                >
-                  <BookTemplate className="h-4 w-4" />
-                </motion.div>
-                <span className="hidden sm:inline">{t("nav.templates")}</span>
-                {pathname === "/templates" && (
                   <motion.div
                     layoutId="navIndicator"
                     className="from-primary-start to-primary-end shadow-primary-start/50 absolute right-0 -bottom-px left-0 h-0.5 bg-gradient-to-r shadow-sm"
@@ -340,14 +240,7 @@ export function Navigation() {
                   onClick={() => handleNavigate("/gallery")}
                 >
                   <Folder className="mr-2 h-4 w-4" />
-                  {t("nav.gallery")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleNavigate("/templates")}
-                >
-                  <BookTemplate className="mr-2 h-4 w-4" />
-                  {t("nav.templates")}
+                  {t("nav.myWorks")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

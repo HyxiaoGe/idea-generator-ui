@@ -301,7 +301,7 @@ function GalleryContent() {
           <div className="flex items-center gap-4">
             <BackButton onClick={() => router.push("/")} />
             <h1 className="text-text-primary text-xl font-semibold md:text-2xl">
-              {t("gallery.title")}
+              {t("nav.myWorks")}
             </h1>
           </div>
 
