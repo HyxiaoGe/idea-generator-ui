@@ -80,8 +80,13 @@ export function useTemplateBrowse({ isAuthenticated, contentType }: UseTemplateB
     mutate: mutateTemplates,
     size,
     setSize,
-    isValidating: isLoadingMore,
   } = useSWRInfinite<TemplateListResponse>(isAuthenticated ? getTemplateKey : () => null);
+
+  // Compute isLoadingMore correctly: only true when the next page hasn't loaded yet,
+  // NOT during revalidation of already-cached pages (which would block infinite scroll)
+  const isLoadingMore = !templatePages
+    ? isAuthenticated && selectedCategory !== "favorites" && selectedCategory !== "recommended"
+    : size > 0 && typeof templatePages[size - 1] === "undefined";
 
   // Fetch favorites
   const { data: favoritesData, mutate: mutateFavorites } = useSWR<
