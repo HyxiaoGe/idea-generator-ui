@@ -37,7 +37,7 @@ import { RecentGenerations } from "@/components/home/recent-generations";
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { checkBeforeGenerate, refreshQuota } = useQuota();
   const { t } = useTranslation();
 
@@ -357,7 +357,7 @@ function HomePageContent() {
       <TemplateMasonryGrid
         templates={templateBrowse.templates}
         lang={templateBrowse.lang}
-        isLoading={templateBrowse.isLoading}
+        isLoading={templateBrowse.isLoading || authLoading}
         isLoadingMore={templateBrowse.isLoadingMore}
         hasMore={templateBrowse.hasMore}
         isFavoritedTab={templateBrowse.selectedCategory === "favorites"}
@@ -372,7 +372,7 @@ function HomePageContent() {
         <RecentGenerations
           contentType={contentType}
           filteredRecent={filteredRecent}
-          isLoading={isLoadingRecent}
+          isLoading={isLoadingRecent || authLoading}
           isAuthenticated={isAuthenticated}
           hasAnyRecent={recentGenerations.length > 0}
           lightboxSlides={recentLightboxSlides}
@@ -408,7 +408,7 @@ function HomePageContent() {
         }}
         onEnlarge={() => setLightboxOpen(true)}
         onCancel={activeGen.cancel}
-        showCancel={activeGen.isGenerating && (contentType === "video" || imageGen.count > 1)}
+        showCancel={activeGen.isGenerating}
       />
 
       {/* Lightbox for generated images */}

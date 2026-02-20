@@ -4,18 +4,16 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { getApiClient } from "@/lib/api-client";
 import { useWebSocketContext } from "@/lib/ws/ws-provider";
 import type { WSMessage } from "@/lib/ws/websocket-client";
-import type { TaskProgress, GeneratedImage } from "@/lib/types";
+import type { GenerateTaskProgress } from "@/lib/types";
 
 interface UseTaskProgressOptions {
-  onComplete?: (results: GeneratedImage[]) => void;
-  onFailed?: (errors: string[]) => void;
+  onComplete?: (progress: GenerateTaskProgress) => void;
+  onFailed?: (progress: GenerateTaskProgress) => void;
 }
 
 interface UseTaskProgressReturn {
   progress: number;
   status: string | null;
-  results: GeneratedImage[];
-  errors: string[];
 }
 
 export function useTaskProgress(
@@ -26,8 +24,6 @@ export function useTaskProgress(
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
-  const [results, setResults] = useState<GeneratedImage[]>([]);
-  const [errors, setErrors] = useState<string[]>([]);
 
   // Refs for callbacks — assign during render to stay current in concurrent mode
   const onCompleteRef = useRef(options?.onComplete);
@@ -39,22 +35,25 @@ export function useTaskProgress(
   const isFinishedRef = useRef(false);
   const startTimeRef = useRef(0);
 
-  const applyProgress = useCallback((tp: TaskProgress) => {
+  const applyProgress = useCallback((tp: GenerateTaskProgress) => {
     if (isFinishedRef.current) return;
 
-    const pct = tp.total > 0 ? Math.round((tp.progress / tp.total) * 100) : 0;
+    // Percentage: single uses progress (0.0-1.0) directly, batch uses progress/total
+    const pct =
+      tp.task_type === "single"
+        ? Math.round(tp.progress * 100)
+        : tp.total && tp.total > 0
+          ? Math.round((tp.progress / tp.total) * 100)
+          : 0;
     setProgress(pct);
     setStatus(tp.status);
 
     if (tp.status === "completed") {
       isFinishedRef.current = true;
-      setResults(tp.results);
-      setErrors(tp.errors);
-      onCompleteRef.current?.(tp.results);
+      onCompleteRef.current?.(tp);
     } else if (tp.status === "failed") {
       isFinishedRef.current = true;
-      setErrors(tp.errors);
-      onFailedRef.current?.(tp.errors);
+      onFailedRef.current?.(tp);
     }
   }, []);
 
@@ -62,8 +61,6 @@ export function useTaskProgress(
   useEffect(() => {
     setProgress(0);
     setStatus(null);
-    setResults([]);
-    setErrors([]);
     isFinishedRef.current = false;
     startTimeRef.current = Date.now();
   }, [taskId]);
@@ -74,17 +71,6 @@ export function useTaskProgress(
 
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
-
-    // One-shot fetch for current state (no chaining)
-    const fetchOnce = async () => {
-      if (cancelled || isFinishedRef.current) return;
-      try {
-        const tp = await getApiClient().getTaskProgress(taskId);
-        if (!cancelled) applyProgress(tp);
-      } catch {
-        // fetch error — WS will deliver updates
-      }
-    };
 
     // Recurring poll: fetches then schedules the next one
     const poll = async () => {
@@ -112,13 +98,13 @@ export function useTaskProgress(
 
     if (ws) {
       unsubProgress = ws.on("task_progress", (msg: WSMessage) => {
-        const data = msg.data as TaskProgress;
+        const data = msg.data as GenerateTaskProgress;
         if (data.task_id === taskId) {
           applyProgress(data);
         }
       });
       unsubComplete = ws.on("generation_complete", (msg: WSMessage) => {
-        const data = msg.data as TaskProgress;
+        const data = msg.data as GenerateTaskProgress;
         if (data.task_id === taskId) {
           applyProgress(data);
         }
@@ -137,5 +123,5 @@ export function useTaskProgress(
     };
   }, [taskId, ws, applyProgress]);
 
-  return { progress, status, results, errors };
+  return { progress, status };
 }

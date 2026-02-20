@@ -1,9 +1,10 @@
 import type {
   GenerateImageRequest,
   GenerateImageResponse,
+  AsyncGenerateResponse,
+  GenerateTaskProgress,
   BatchGenerateRequest,
   BatchGenerateResponse,
-  TaskProgress,
   ProviderInfo,
   SendMessageResponse,
   ChatHistoryResponse,
@@ -165,7 +166,7 @@ export class ApiClient {
     provider?: string,
     model?: string,
     signal?: AbortSignal
-  ): Promise<GenerateImageResponse> {
+  ): Promise<AsyncGenerateResponse> {
     const headers: Record<string, string> = {};
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;
@@ -196,7 +197,7 @@ export class ApiClient {
     return this.request("POST", "/generate/batch", { body: req, headers, signal });
   }
 
-  async getTaskProgress(taskId: string): Promise<TaskProgress> {
+  async getTaskProgress(taskId: string): Promise<GenerateTaskProgress> {
     return this.request("GET", `/generate/task/${taskId}`);
   }
 

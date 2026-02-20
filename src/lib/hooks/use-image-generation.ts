@@ -9,8 +9,8 @@ import type {
   AspectRatio,
   QualityPreset,
   GenerateImageResponse,
+  GenerateTaskProgress,
   GeneratedImageInfo,
-  GeneratedImage,
 } from "@/lib/types";
 import { getProviderAndModel, mapResolution, getImageUrl } from "@/lib/transforms";
 import { getTranslations, interpolate } from "@/lib/i18n";
@@ -37,47 +37,81 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImageInfo[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Batch task tracking
-  const [batchTaskId, setBatchTaskId] = useState<string | null>(null);
+  // Task tracking (unified for single + batch)
+  const [taskId, setTaskId] = useState<string | null>(null);
 
-  // Abort controller for single-image cancellation
+  // Abort controller for in-flight HTTP requests (initial POST or search sync)
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const onCompleteRef = useRef(options?.onComplete);
   onCompleteRef.current = options?.onComplete;
 
-  // Use WebSocket-first task progress for batch generation
-  const batchProgress = useTaskProgress(batchTaskId, {
-    onComplete: (results: GeneratedImage[]) => {
-      const imgs = results
-        .map((r) => getImageUrl(r.url || r.key))
-        .filter(Boolean)
-        .map((url) => ({ url }));
-      setGeneratedImages(imgs);
+  // Unified task progress for both single and batch generation
+  const taskProgress = useTaskProgress(taskId, {
+    onComplete: (tp: GenerateTaskProgress) => {
+      if (tp.task_type === "single" && tp.result) {
+        const result = tp.result;
+        const imageUrl = getImageUrl(result.image.url || result.image.key);
+        setGeneratedImages([
+          {
+            url: imageUrl,
+            provider: result.provider,
+            model: result.model,
+            model_display_name: result.model_display_name,
+            duration: result.duration,
+            mode: result.mode,
+            settings: result.settings
+              ? {
+                  aspect_ratio: result.settings.aspect_ratio,
+                  resolution: result.settings.resolution,
+                }
+              : undefined,
+            processed_prompt: result.processed_prompt,
+            width: result.image.width,
+            height: result.image.height,
+            created_at: result.created_at,
+          },
+        ]);
+        const t = getTranslations();
+        if (result.processed_prompt) {
+          toast.success(t.generation.complete, {
+            description: interpolate(t.generation.completeWithPrompt, {
+              prompt: result.processed_prompt.slice(0, 80),
+            }),
+          });
+        } else {
+          toast.success(t.generation.complete);
+        }
+      } else if (tp.task_type === "batch" && tp.results) {
+        const imgs = tp.results
+          .map((r) => getImageUrl(r.url || r.key))
+          .filter(Boolean)
+          .map((url) => ({ url }));
+        setGeneratedImages(imgs);
+        toast.success(getTranslations().generation.complete);
+      }
       setState("result");
       setIsGenerating(false);
       setEnhancePrompt(false);
-      setBatchTaskId(null);
+      setTaskId(null);
       onCompleteRef.current?.();
-      toast.success(getTranslations().generation.complete);
     },
-    onFailed: (errors: string[]) => {
+    onFailed: (tp: GenerateTaskProgress) => {
       setState("empty");
       setIsGenerating(false);
-      setBatchTaskId(null);
+      setTaskId(null);
       const t = getTranslations();
-      toast.error(t.generation.failed, {
-        description: errors.join(", ") || t.generation.failedRetry,
-      });
+      const errorMsg = tp.error || tp.errors?.join(", ") || t.generation.failedRetry;
+      toast.error(t.generation.failed, { description: errorMsg });
     },
   });
 
-  // Sync task progress to local progress state (must be in useEffect, not render phase)
+  // Sync task progress to local progress state
   useEffect(() => {
-    if (batchTaskId && batchProgress.progress > 0) {
-      setProgress(batchProgress.progress);
+    if (taskId && taskProgress.progress > 0) {
+      setProgress(taskProgress.progress);
     }
-  }, [batchTaskId, batchProgress.progress]);
+  }, [taskId, taskProgress.progress]);
 
   const generate = useCallback(
     async (prompt: string, selectedTemplateId: string | null) => {
@@ -110,18 +144,9 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
               )
             : await api.batchGenerate({ ...batchBody, quality_preset: qualityPreset });
 
-          setBatchTaskId(result.task_id);
+          setTaskId(result.task_id);
         } else {
           // Single image generation
-          setProgress(20);
-
-          const controller = new AbortController();
-          abortControllerRef.current = controller;
-
-          const generateFn = searchGrounding
-            ? api.generateWithSearch.bind(api)
-            : api.generateImage.bind(api);
-
           const singleBody = {
             prompt,
             template_id: selectedTemplateId || undefined,
@@ -133,55 +158,83 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
             enhance_prompt: enhancePrompt || undefined,
           };
 
-          const result: GenerateImageResponse = imageManualSelection
-            ? await generateFn(
-                singleBody,
-                imageManualSelection.provider,
-                imageManualSelection.model,
-                controller.signal
-              )
-            : await generateFn(
-                { ...singleBody, quality_preset: qualityPreset },
-                undefined,
-                undefined,
-                controller.signal
-              );
+          if (searchGrounding) {
+            // Search is still synchronous — keep existing inline logic
+            setProgress(20);
 
-          setProgress(100);
-          const imageUrl = getImageUrl(result.image.url || result.image.key);
-          setGeneratedImages([
-            {
-              url: imageUrl,
-              provider: result.provider,
-              model: result.model,
-              model_display_name: result.model_display_name,
-              duration: result.duration,
-              mode: result.mode,
-              settings: result.settings
-                ? {
-                    aspect_ratio: result.settings.aspect_ratio,
-                    resolution: result.settings.resolution,
-                  }
-                : undefined,
-              processed_prompt: result.processed_prompt,
-              width: result.image.width,
-              height: result.image.height,
-              created_at: result.created_at,
-            },
-          ]);
-          setState("result");
-          setIsGenerating(false);
-          setEnhancePrompt(false);
-          onCompleteRef.current?.();
-          const t = getTranslations();
-          if (result.processed_prompt) {
-            toast.success(t.generation.complete, {
-              description: interpolate(t.generation.completeWithPrompt, {
-                prompt: result.processed_prompt.slice(0, 80),
-              }),
-            });
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            const result: GenerateImageResponse = imageManualSelection
+              ? await api.generateWithSearch(
+                  singleBody,
+                  imageManualSelection.provider,
+                  imageManualSelection.model,
+                  controller.signal
+                )
+              : await api.generateWithSearch(
+                  { ...singleBody, quality_preset: qualityPreset },
+                  undefined,
+                  undefined,
+                  controller.signal
+                );
+
+            setProgress(100);
+            const imageUrl = getImageUrl(result.image.url || result.image.key);
+            setGeneratedImages([
+              {
+                url: imageUrl,
+                provider: result.provider,
+                model: result.model,
+                model_display_name: result.model_display_name,
+                duration: result.duration,
+                mode: result.mode,
+                settings: result.settings
+                  ? {
+                      aspect_ratio: result.settings.aspect_ratio,
+                      resolution: result.settings.resolution,
+                    }
+                  : undefined,
+                processed_prompt: result.processed_prompt,
+                width: result.image.width,
+                height: result.image.height,
+                created_at: result.created_at,
+              },
+            ]);
+            setState("result");
+            setIsGenerating(false);
+            setEnhancePrompt(false);
+            onCompleteRef.current?.();
+            const t = getTranslations();
+            if (result.processed_prompt) {
+              toast.success(t.generation.complete, {
+                description: interpolate(t.generation.completeWithPrompt, {
+                  prompt: result.processed_prompt.slice(0, 80),
+                }),
+              });
+            } else {
+              toast.success(t.generation.complete);
+            }
           } else {
-            toast.success(t.generation.complete);
+            // Async generation — get task_id, delegate to useTaskProgress
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            const result = imageManualSelection
+              ? await api.generateImage(
+                  singleBody,
+                  imageManualSelection.provider,
+                  imageManualSelection.model,
+                  controller.signal
+                )
+              : await api.generateImage(
+                  { ...singleBody, quality_preset: qualityPreset },
+                  undefined,
+                  undefined,
+                  controller.signal
+                );
+
+            setTaskId(result.task_id);
           }
         }
       } catch (error) {
@@ -198,37 +251,37 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
   const cancel = useCallback(async () => {
     const api = getApiClient();
 
-    // Cancel batch task via API
-    if (batchTaskId) {
+    // Cancel task via API (works for both single gen_ and batch tasks)
+    if (taskId) {
       try {
-        const result = await api.cancelTask(batchTaskId);
+        const result = await api.cancelTask(taskId);
         const t = getTranslations();
         if (result.refunded_count > 0) {
           toast.info(t.quota.cancelledGeneration, {
             description: interpolate(t.quota.refundedQuota, { count: result.refunded_count }),
           });
         } else {
-          toast.info(t.quota.cancelledGeneration);
+          toast.info(getTranslations().quota.cancelledGeneration);
         }
       } catch {
         toast.info(getTranslations().quota.cancelledGeneration);
       }
     }
 
-    // Abort in-flight single-image fetch
+    // Abort in-flight HTTP request (for search sync or the initial POST)
     abortControllerRef.current?.abort();
 
     setState("empty");
     setIsGenerating(false);
     setProgress(0);
-    setBatchTaskId(null);
-  }, [batchTaskId]);
+    setTaskId(null);
+  }, [taskId]);
 
   const reset = useCallback(() => {
     setState("empty");
     setProgress(0);
     setGeneratedImages([]);
-    setBatchTaskId(null);
+    setTaskId(null);
   }, []);
 
   const generateRandomSeed = useCallback(() => {

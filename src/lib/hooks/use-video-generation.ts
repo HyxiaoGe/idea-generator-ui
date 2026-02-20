@@ -6,7 +6,12 @@ import useSWR from "swr";
 import { getApiClient } from "@/lib/api-client";
 import { showErrorToast } from "@/lib/error-toast";
 import { useTaskProgress } from "./use-task-progress";
-import type { AspectRatio, ProviderInfo, GeneratedImageInfo, GeneratedImage } from "@/lib/types";
+import type {
+  AspectRatio,
+  ProviderInfo,
+  GeneratedImageInfo,
+  GenerateTaskProgress,
+} from "@/lib/types";
 import { getProviderAndModel, mapResolution, getImageUrl } from "@/lib/transforms";
 import { getTranslations, interpolate } from "@/lib/i18n";
 
@@ -61,7 +66,8 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
 
   // Use WebSocket-first task progress
   const videoProgress = useTaskProgress(taskId, {
-    onComplete: (results: GeneratedImage[]) => {
+    onComplete: (tp: GenerateTaskProgress) => {
+      const results = tp.results || [];
       const imgs = results
         .map((r) => getImageUrl(r.url || r.key))
         .filter(Boolean)
@@ -73,14 +79,13 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
       onCompleteRef.current?.();
       toast.success(getTranslations().generation.videoComplete);
     },
-    onFailed: (errors: string[]) => {
+    onFailed: (tp: GenerateTaskProgress) => {
       setState("empty");
       setIsGenerating(false);
       setTaskId(null);
       const t = getTranslations();
-      toast.error(t.generation.failed, {
-        description: errors.join(", ") || t.generation.failedRetry,
-      });
+      const errorMsg = tp.error || tp.errors?.join(", ") || t.generation.failedRetry;
+      toast.error(t.generation.failed, { description: errorMsg });
     },
   });
 

@@ -96,6 +96,35 @@ export interface GenerateImageResponse {
   search_sources?: string;
 }
 
+// ===== Async Generation =====
+
+export interface AsyncGenerateResponse {
+  task_id: string;
+  status: string;
+  message: string;
+}
+
+export interface GenerateTaskProgress {
+  task_id: string;
+  task_type: "single" | "batch";
+  status: string;
+  progress: number;
+  // Single fields
+  stage?: string;
+  provider?: string;
+  result?: GenerateImageResponse;
+  // Batch fields
+  total?: number;
+  current_prompt?: string;
+  results?: GeneratedImage[];
+  errors?: string[];
+  // Common
+  error?: string;
+  error_code?: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
 // ===== Batch Generation =====
 
 export interface BatchGenerateRequest {

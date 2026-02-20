@@ -127,17 +127,16 @@ export default function ImageToVideoPage() {
         try {
           const taskProgress = await api.getTaskProgress(result.task_id);
           const pct =
-            taskProgress.total > 0
+            taskProgress.total && taskProgress.total > 0
               ? Math.round((taskProgress.progress / taskProgress.total) * 100)
-              : 0;
+              : Math.round(taskProgress.progress * 100);
           setProgress(pct);
 
           if (taskProgress.status === "completed") {
             clearInterval(pollInterval);
+            const results = taskProgress.results || [];
             const videoUrl =
-              taskProgress.results.length > 0
-                ? getImageUrl(taskProgress.results[0].url || taskProgress.results[0].key)
-                : null;
+              results.length > 0 ? getImageUrl(results[0].url || results[0].key) : null;
             setResultVideoUrl(videoUrl);
             setState("result");
             refreshQuota();
@@ -146,7 +145,8 @@ export default function ImageToVideoPage() {
             clearInterval(pollInterval);
             setState("idle");
             toast.error(t("generation.failed"), {
-              description: taskProgress.errors.join(", ") || t("common.retry"),
+              description:
+                taskProgress.errors?.join(", ") || taskProgress.error || t("common.retry"),
             });
           }
         } catch {
