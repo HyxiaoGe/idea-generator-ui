@@ -6,6 +6,15 @@ import { ApiError, getApiClient } from "./api-client";
 
 const CACHE_KEY = "swr-cache";
 
+// Keys matching these patterns should NOT be persisted to localStorage
+// because they contain paginated data that interferes with useSWRInfinite
+function shouldPersistKey(key: string): boolean {
+  if (key.startsWith("$inf$")) return false;
+  // Paginated template lists - always fetch fresh to avoid stale infinite-scroll state
+  if (key.startsWith("/templates?") && key.includes("page")) return false;
+  return true;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function localStorageProvider(): Cache<any> {
   // Hydrate from localStorage on init
@@ -13,8 +22,10 @@ function localStorageProvider(): Cache<any> {
   let map: Map<string, any>;
   try {
     const stored = localStorage.getItem(CACHE_KEY);
+    const raw: [string, unknown][] = stored ? JSON.parse(stored) : [];
+    // Strip paginated & infinite-scroll keys to avoid stale state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    map = new Map<string, any>(stored ? JSON.parse(stored) : []);
+    map = new Map<string, any>(raw.filter(([key]) => shouldPersistKey(key)));
   } catch {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map = new Map<string, any>();
@@ -24,7 +35,8 @@ function localStorageProvider(): Cache<any> {
   if (typeof window !== "undefined") {
     window.addEventListener("beforeunload", () => {
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(Array.from(map.entries())));
+        const entries = Array.from(map.entries()).filter(([key]) => shouldPersistKey(key));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
       } catch {
         // Storage full or unavailable — ignore
       }
