@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { getApiClient } from "@/lib/api-client";
 import { showErrorToast } from "@/lib/error-toast";
@@ -72,10 +72,12 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
     },
   });
 
-  // Sync task progress to local progress state
-  if (batchTaskId && batchProgress.progress > progress) {
-    setProgress(batchProgress.progress);
-  }
+  // Sync task progress to local progress state (must be in useEffect, not render phase)
+  useEffect(() => {
+    if (batchTaskId && batchProgress.progress > 0) {
+      setProgress(batchProgress.progress);
+    }
+  }, [batchTaskId, batchProgress.progress]);
 
   const generate = useCallback(
     async (prompt: string, selectedTemplateId: string | null) => {

@@ -13,6 +13,7 @@ import {
   formatRelativeTime,
   getModeDisplayName,
   getImageUrl,
+  getTemplateDescription,
   inferContentType,
 } from "@/lib/transforms";
 
@@ -61,7 +62,9 @@ function HomePageContent() {
     data: historyData,
     isLoading: isLoadingRecent,
     mutate: refreshHistory,
-  } = useSWR<{ items: HistoryItem[] }>(isAuthenticated ? `/history?limit=6` : null);
+  } = useSWR<{ items: HistoryItem[] }>(
+    isAuthenticated ? `/history?limit=6&media_type=${contentType}` : null
+  );
   const recentGenerations = useMemo(() => historyData?.items || [], [historyData]);
 
   // Generation hooks
@@ -174,14 +177,16 @@ function HomePageContent() {
       const allowed = await checkBeforeGenerate();
       if (!allowed) return;
 
-      // Fetch template detail to get prompt_text
+      // Fetch template detail to get prompt_text and description
       try {
         const { getApiClient } = await import("@/lib/api-client");
         const api = getApiClient();
         const detail = await api.useTemplate(templateId);
 
+        // Show description in input, send prompt_text to backend
+        const displayText = getTemplateDescription(detail, templateBrowse.lang);
         setDetailModalOpen(false);
-        setPrompt(detail.prompt_text);
+        setPrompt(displayText);
         setSelectedTemplateId(templateId);
         setGenerationOverlayOpen(true);
         activeGen.generate(detail.prompt_text, templateId);
@@ -189,7 +194,7 @@ function HomePageContent() {
         toast.error(t("common.operationFailed"));
       }
     },
-    [isAuthenticated, checkBeforeGenerate, activeGen, router, t]
+    [isAuthenticated, checkBeforeGenerate, activeGen, templateBrowse.lang, router, t]
   );
 
   const handlePromptChange = useCallback(
@@ -235,11 +240,8 @@ function HomePageContent() {
     [activeGen.generatedImages, prompt]
   );
 
-  // Filtered recent items for current contentType
-  const filteredRecent = useMemo(
-    () => recentGenerations.filter((item) => inferContentType(item.filename) === contentType),
-    [recentGenerations, contentType]
-  );
+  // Recent items already filtered by contentType via API
+  const filteredRecent = recentGenerations;
 
   const recentLightboxSlides: LightboxSlide[] = useMemo(
     () =>
@@ -351,21 +353,19 @@ function HomePageContent() {
       {/* Mode Chips */}
       <ModeChips contentType={contentType} />
 
-      {/* Template Masonry Grid (main content, image only) */}
-      {contentType === "image" && (
-        <TemplateMasonryGrid
-          templates={templateBrowse.templates}
-          lang={templateBrowse.lang}
-          isLoading={templateBrowse.isLoading}
-          isLoadingMore={templateBrowse.isLoadingMore}
-          hasMore={templateBrowse.hasMore}
-          isFavoritedTab={templateBrowse.selectedCategory === "favorites"}
-          isAuthenticated={isAuthenticated}
-          onLoadMore={templateBrowse.loadMore}
-          onTemplateClick={handleTemplateClick}
-          onToggleFavorite={templateBrowse.toggleFavorite}
-        />
-      )}
+      {/* Template Masonry Grid (main content) */}
+      <TemplateMasonryGrid
+        templates={templateBrowse.templates}
+        lang={templateBrowse.lang}
+        isLoading={templateBrowse.isLoading}
+        isLoadingMore={templateBrowse.isLoadingMore}
+        hasMore={templateBrowse.hasMore}
+        isFavoritedTab={templateBrowse.selectedCategory === "favorites"}
+        isAuthenticated={isAuthenticated}
+        onLoadMore={templateBrowse.loadMore}
+        onTemplateClick={handleTemplateClick}
+        onToggleFavorite={templateBrowse.toggleFavorite}
+      />
 
       {/* Recent Generations */}
       <div className="mt-8">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Sparkles } from "lucide-react";
+import { Heart, ImageIcon, Sparkles } from "lucide-react";
 import { ProgressiveImage } from "@/components/progressive-image";
 import type { TemplateListItem } from "@/lib/types";
 import { getImageUrl, getTemplateDisplayName } from "@/lib/transforms";
@@ -53,13 +53,22 @@ export function TemplateCard({
       className="group relative cursor-pointer overflow-hidden rounded-xl"
       style={{ width, height }}
     >
-      <ProgressiveImage
-        src={imageUrl}
-        alt={getTemplateDisplayName(template, lang)}
-        className="h-full w-full"
-        showLoader={false}
-        loaderSize="sm"
-      />
+      {imageUrl ? (
+        <ProgressiveImage
+          src={imageUrl}
+          alt={getTemplateDisplayName(template, lang)}
+          className="h-full w-full"
+          showLoader={false}
+          loaderSize="sm"
+        />
+      ) : (
+        <div className="bg-surface-elevated flex h-full w-full flex-col items-center justify-center gap-2">
+          <ImageIcon className="h-8 w-8 text-[#52525B]" />
+          <p className="text-text-secondary max-w-[80%] truncate text-center text-xs">
+            {getTemplateDisplayName(template, lang)}
+          </p>
+        </div>
+      )}
 
       {/* Hot badge */}
       {template.use_count > 10000 && (

@@ -84,10 +84,12 @@ export function useVideoGeneration(isAuthenticated: boolean, options?: UseVideoG
     },
   });
 
-  // Sync task progress
-  if (taskId && videoProgress.progress > progress) {
-    setProgress(videoProgress.progress);
-  }
+  // Sync task progress (must be in useEffect, not render phase)
+  useEffect(() => {
+    if (taskId && videoProgress.progress > 0) {
+      setProgress(videoProgress.progress);
+    }
+  }, [taskId, videoProgress.progress]);
 
   const generate = useCallback(
     async (prompt: string, selectedTemplateId: string | null) => {
