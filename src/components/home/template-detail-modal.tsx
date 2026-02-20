@@ -55,12 +55,14 @@ export function TemplateDetailModal({
           ) : (
             <div className="max-h-[85vh] overflow-y-auto">
               {/* Preview image */}
-              <div className="bg-background relative aspect-video">
+              <div className="bg-surface relative flex max-h-[60vh] items-center justify-center">
                 <ProgressiveImage
                   src={getImageUrl(detail.preview_image_url)}
                   alt={getTemplateDisplayName(detail, lang)}
-                  aspectRatio="video"
-                  className="h-full w-full"
+                  aspectRatio="auto"
+                  objectFit="contain"
+                  eager
+                  className="max-h-[60vh] w-full"
                 />
               </div>
 

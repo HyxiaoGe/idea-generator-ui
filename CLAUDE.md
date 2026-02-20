@@ -37,7 +37,9 @@ npm run test:coverage  # Tests with coverage (covers src/lib/**, excludes src/co
 
 ### Testing
 
-Vitest with jsdom + React Testing Library. Tests live in `src/lib/__tests__/`. Run a single test file:
+Vitest with jsdom + React Testing Library. Tests can live in any `__tests__/` subdirectory or as colocated `.test.{ts,tsx}` files (vitest includes `src/**/__tests__/**/*.test.{ts,tsx}` and `src/**/*.test.{ts,tsx}`). Existing tests are in `src/lib/__tests__/`. Setup file at `src/__tests__/setup.ts` imports jest-dom matchers.
+
+Run a single test file:
 
 ```bash
 npx vitest run src/lib/__tests__/transforms.test.ts
@@ -49,7 +51,7 @@ Husky runs on every commit: `lint-staged` (ESLint fix + Prettier on staged files
 
 ### Code Style
 
-Prettier enforces: double quotes, semicolons, 2-space indent, trailing commas (es5), 100 char print width. Tailwind class sorting via `prettier-plugin-tailwindcss`.
+Prettier enforces: double quotes, semicolons, 2-space indent, trailing commas (es5), 100 char print width. Tailwind class sorting via `prettier-plugin-tailwindcss`. Prefix unused variables/args with `_` to silence lint warnings (`argsIgnorePattern: "^_"`).
 
 ## Architecture
 
@@ -94,7 +96,8 @@ Query parameters are used for state on the home page (e.g., `/?type=image&prompt
 
 - `ThemeProvider` (next-themes + custom animation context)
 - `AuthProvider` (OAuth via auth-service, localStorage token management, auto-refresh)
-- `SWRProvider` (SWR global config with auth-aware fetcher)
+- `SWRProvider` (SWR global config with auth-aware fetcher, localStorage cache persistence)
+- `LanguageProvider` (i18n: zh-CN/en/ja, persisted to localStorage + backend preferences)
 - `QuotaProvider` (real-time quota from `/api/quota`)
 - `WebSocketProvider` (auto-connects when authenticated)
 - `Navigation` component (sticky top bar with auth-aware user info and quota)
@@ -119,6 +122,16 @@ src/
 │   ├── swr-config.tsx          # SWR global provider + auth-aware fetcher
 │   ├── transforms.ts           # Data transforms (time, mode names, provider mapping, URLs)
 │   ├── utils.ts                # cn() utility (clsx + tailwind-merge)
+│   ├── hooks/
+│   │   ├── use-image-generation.ts  # Image generation state, settings, batch task tracking
+│   │   ├── use-video-generation.ts  # Video generation state and settings
+│   │   ├── use-template-browse.ts   # Template browsing with infinite scroll (useSWRInfinite)
+│   │   └── use-task-progress.ts     # WebSocket-first + polling fallback for batch progress
+│   ├── i18n/
+│   │   ├── index.tsx          # LanguageProvider, useTranslation hook, getTranslations (non-React)
+│   │   ├── types.ts           # TranslationKeys interface
+│   │   └── locales/           # zh-CN.ts, en.ts, ja.ts
+│   ├── error-toast.ts         # showErrorToast — maps ApiError.errorCode to localized messages
 │   ├── auth/
 │   │   ├── auth-client.ts     # Auth-service API (OAuth redirect, token exchange/refresh/revoke, userinfo)
 │   │   ├── auth-context.tsx   # AuthProvider (localStorage tokens, auto-refresh, concurrent debounce)
@@ -165,9 +178,38 @@ Auth is handled by a standalone auth-service (port 8100), not the main backend.
 
 `src/lib/api-client.ts` provides a singleton `ApiClient` class. Get it via `getApiClient()`. It auto-injects `Authorization` headers, supports `X-Provider`/`X-Model` headers for provider routing, and automatically retries on 401 (after token refresh). All pages use this client for backend calls. Auth-specific requests (token exchange, refresh, revoke, userinfo) go through `src/lib/auth/auth-client.ts` directly to auth-service, not through `ApiClient`.
 
+### i18n (Internationalization)
+
+Custom i18n system in `src/lib/i18n/`. Supports three languages: `zh-CN` (default), `en`, `ja`.
+
+**In React components:**
+
+```ts
+const { t, language, changeLanguage } = useTranslation();
+t("common.generate"); // => "生成" | "Generate" | "生成する"
+t("time.minutesAgo", { n: 5 }); // => interpolates {n} variables
+```
+
+**In non-React code** (e.g., `transforms.ts`, `error-toast.ts`):
+
+```ts
+import { getTranslations, interpolate } from "@/lib/i18n";
+const t = getTranslations(); // reads module-level current language
+```
+
+SSR always initializes as `zh-CN` to avoid hydration mismatch; actual language is detected from localStorage (`app-language`) or `navigator.language` after hydration. Language changes are synced to the backend via `/preferences` API.
+
+### SWR Caching
+
+`SWRProvider` uses a localStorage cache provider (key: `swr-cache`) that persists SWR cache across page reloads. Infinite-scroll keys (`$inf$` prefix) and paginated template keys are excluded from persistence. Config: `revalidateOnFocus: false`, `errorRetryCount: 3`, no retry on 401/403/404.
+
 ### ESLint Configuration
 
 Flat config (`eslint.config.mjs`): TypeScript recommended + Next.js + Prettier. `@typescript-eslint/no-unused-vars` and `no-explicit-any` are warnings (not errors). Files in `src/components/ui/` have relaxed rules (auto-generated shadcn components — avoid editing these manually).
+
+### CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to `master`: ESLint (max 100 warnings) → typecheck → test → build. Node.js 20.
 
 ### Legacy Code
 

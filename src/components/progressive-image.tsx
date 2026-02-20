@@ -11,6 +11,8 @@ interface ProgressiveImageProps {
   thumbnail?: string;
   className?: string;
   aspectRatio?: "square" | "video" | "portrait" | "auto";
+  objectFit?: "cover" | "contain";
+  eager?: boolean;
   showLoader?: boolean;
   loaderSize?: "sm" | "md" | "lg";
   onLoad?: () => void;
@@ -19,19 +21,31 @@ interface ProgressiveImageProps {
 
 type LoadingState = "skeleton" | "loading" | "loaded" | "error";
 
+function isImageCached(url: string): boolean {
+  if (!url) return false;
+  const img = new Image();
+  img.src = url;
+  return img.complete && img.naturalWidth > 0;
+}
+
 export function ProgressiveImage({
   src,
   alt,
   thumbnail,
   className,
   aspectRatio = "auto",
+  objectFit = "cover",
+  eager = false,
   showLoader = true,
   loaderSize = "md",
   onLoad,
   onError,
 }: ProgressiveImageProps) {
-  const [loadingState, setLoadingState] = useState<LoadingState>("skeleton");
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const cached = eager && isImageCached(src);
+  const [loadingState, setLoadingState] = useState<LoadingState>(
+    cached ? "loaded" : eager ? "loading" : "skeleton"
+  );
+  const [shouldLoad, setShouldLoad] = useState(eager && !cached);
   const imgRef = useRef<HTMLDivElement>(null);
 
   const aspectRatioClasses = {
@@ -48,6 +62,8 @@ export function ProgressiveImage({
   };
 
   useEffect(() => {
+    if (eager) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -67,7 +83,7 @@ export function ProgressiveImage({
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [eager]);
 
   useEffect(() => {
     if (!shouldLoad) return;
@@ -77,10 +93,17 @@ export function ProgressiveImage({
       return;
     }
 
-    setLoadingState("loading");
-
     const img = new Image();
     img.src = src;
+
+    // Browser cache hit — skip loading state entirely
+    if (img.complete && img.naturalWidth > 0) {
+      setLoadingState("loaded");
+      onLoad?.();
+      return;
+    }
+
+    setLoadingState("loading");
 
     img.onload = () => {
       setLoadingState("loaded");
@@ -179,7 +202,10 @@ export function ProgressiveImage({
               scale: [1.02, 1],
             }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="h-full w-full object-cover"
+            className={cn(
+              "h-full w-full",
+              objectFit === "contain" ? "object-contain" : "object-cover"
+            )}
           />
         )}
 
