@@ -168,6 +168,7 @@ export function templateToListItem(t: Template): TemplateListItem {
     category: t.category,
     tags: [],
     difficulty: "beginner",
+    media_type: "image",
     use_count: t.uses,
     like_count: 0,
     favorite_count: 0,

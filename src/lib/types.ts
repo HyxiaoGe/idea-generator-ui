@@ -360,6 +360,7 @@ export interface TemplateListItem {
   category: string;
   tags: string[];
   difficulty: string;
+  media_type: "image" | "video";
   use_count: number;
   like_count: number;
   favorite_count: number;
@@ -382,6 +383,7 @@ export interface TemplateDetailResponse {
   style_keywords: string[];
   parameters: Record<string, unknown>;
   difficulty: string;
+  media_type: "image" | "video";
   language: string;
   source: string;
   use_count: number;

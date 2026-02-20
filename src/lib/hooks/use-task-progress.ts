@@ -106,7 +106,7 @@ export function useTaskProgress(
       pollTimer = setTimeout(poll, interval);
     };
 
-    // WS-first strategy
+    // WS-first strategy with polling safety net
     let unsubProgress: (() => void) | undefined;
     let unsubComplete: (() => void) | undefined;
 
@@ -123,12 +123,11 @@ export function useTaskProgress(
           applyProgress(data);
         }
       });
-      // One initial fetch to get current state (WS may have missed events)
-      fetchOnce();
-    } else {
-      // No WS — pure polling fallback
-      poll();
     }
+
+    // Always poll: initial fetch + periodic safety net
+    // WS delivers faster updates, but polling ensures completion is never missed
+    poll();
 
     return () => {
       cancelled = true;

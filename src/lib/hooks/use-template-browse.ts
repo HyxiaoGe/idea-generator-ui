@@ -20,10 +20,7 @@ interface UseTemplateBrowseOptions {
   contentType: "image" | "video";
 }
 
-export function useTemplateBrowse({
-  isAuthenticated,
-  contentType: _contentType,
-}: UseTemplateBrowseOptions) {
+export function useTemplateBrowse({ isAuthenticated, contentType }: UseTemplateBrowseOptions) {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,7 +37,7 @@ export function useTemplateBrowse({
 
   // Fetch categories
   const { data: categoriesData } = useSWR<TemplateCategoryInfo[]>(
-    isAuthenticated ? "/templates/categories" : null
+    isAuthenticated ? `/templates/categories?media_type=${contentType}` : null
   );
 
   // Get language from preferences
@@ -68,13 +65,14 @@ export function useTemplateBrowse({
       const params = new URLSearchParams();
       params.set("page_size", PAGE_SIZE.toString());
       params.set("page", (pageIndex + 1).toString());
+      params.set("media_type", contentType);
       if (selectedCategory !== "all") {
         params.set("category", selectedCategory);
       }
       if (debouncedSearch) params.set("search", debouncedSearch);
       return `/templates?${params.toString()}`;
     },
-    [selectedCategory, debouncedSearch]
+    [selectedCategory, debouncedSearch, contentType]
   );
 
   const {
@@ -88,7 +86,11 @@ export function useTemplateBrowse({
   // Fetch favorites
   const { data: favoritesData, mutate: mutateFavorites } = useSWR<
     TemplateListResponse | TemplateListItem[]
-  >(isAuthenticated && selectedCategory === "favorites" ? "/templates/favorites" : null);
+  >(
+    isAuthenticated && selectedCategory === "favorites"
+      ? `/templates/favorites?media_type=${contentType}`
+      : null
+  );
   const favoriteTemplates = favoritesData
     ? Array.isArray(favoritesData)
       ? favoritesData
@@ -97,7 +99,9 @@ export function useTemplateBrowse({
 
   // Fetch recommended
   const { data: recommendedData } = useSWR<TemplateListResponse | TemplateListItem[]>(
-    isAuthenticated && selectedCategory === "recommended" ? "/templates/recommended" : null
+    isAuthenticated && selectedCategory === "recommended"
+      ? `/templates/recommended?media_type=${contentType}`
+      : null
   );
   const recommendedTemplates = recommendedData
     ? Array.isArray(recommendedData)
@@ -136,10 +140,15 @@ export function useTemplateBrowse({
     return templates;
   }, [templates, debouncedSearch, selectedCategory]);
 
-  // Reset pagination when filters change
+  // Reset pagination and category when filters change
   useEffect(() => {
     setSize(1);
-  }, [selectedCategory, debouncedSearch, setSize]);
+  }, [selectedCategory, debouncedSearch, contentType, setSize]);
+
+  // Reset to "all" when contentType changes
+  useEffect(() => {
+    setSelectedCategory("all");
+  }, [contentType]);
 
   // Load more
   const loadMore = useCallback(() => {

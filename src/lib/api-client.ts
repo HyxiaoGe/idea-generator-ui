@@ -70,6 +70,7 @@ export class ApiClient {
       body?: unknown;
       headers?: Record<string, string>;
       signal?: AbortSignal;
+      timeout?: number;
     },
     _isRetry = false
   ): Promise<T> {
@@ -83,12 +84,28 @@ export class ApiClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers,
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-      signal: options?.signal,
-    });
+    // Use caller-provided signal, or create a timeout signal (default 60s)
+    const timeout = options?.timeout ?? 60_000;
+    let signal = options?.signal;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    if (!signal && timeout > 0) {
+      const controller = new AbortController();
+      signal = controller.signal;
+      timeoutId = setTimeout(() => controller.abort(), timeout);
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers,
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+        signal,
+      });
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
 
     if (response.status === 401 && !_isRetry) {
       await this.onUnauthorized();

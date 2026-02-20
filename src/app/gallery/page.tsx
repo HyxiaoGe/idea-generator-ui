@@ -81,7 +81,7 @@ function GalleryContent() {
     const params = new URLSearchParams();
     params.set("limit", PAGE_SIZE.toString());
     params.set("offset", (pageIndex * PAGE_SIZE).toString());
-    if (typeFilter !== "all") params.set("type", typeFilter);
+    if (typeFilter !== "all") params.set("media_type", typeFilter);
     if (modeFilter !== "all") params.set("mode", modeFilter);
     if (debouncedSearch) params.set("search", debouncedSearch);
     return `/history?${params.toString()}`;
