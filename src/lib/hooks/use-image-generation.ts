@@ -8,7 +8,6 @@ import { useTaskProgress } from "./use-task-progress";
 import type {
   AspectRatio,
   QualityPreset,
-  GenerateImageResponse,
   GenerateTaskProgress,
   GeneratedImageInfo,
 } from "@/lib/types";
@@ -146,7 +145,7 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
 
           setTaskId(result.task_id);
         } else {
-          // Single image generation
+          // Single image generation (both normal and search grounding are async)
           const singleBody = {
             prompt,
             template_id: selectedTemplateId || undefined,
@@ -158,84 +157,27 @@ export function useImageGeneration(options?: UseImageGenerationOptions) {
             enhance_prompt: enhancePrompt || undefined,
           };
 
-          if (searchGrounding) {
-            // Search is still synchronous — keep existing inline logic
-            setProgress(20);
+          const controller = new AbortController();
+          abortControllerRef.current = controller;
 
-            const controller = new AbortController();
-            abortControllerRef.current = controller;
+          const apiCall = searchGrounding ? api.generateWithSearch : api.generateImage;
+          const result = imageManualSelection
+            ? await apiCall.call(
+                api,
+                singleBody,
+                imageManualSelection.provider,
+                imageManualSelection.model,
+                controller.signal
+              )
+            : await apiCall.call(
+                api,
+                { ...singleBody, quality_preset: qualityPreset },
+                undefined,
+                undefined,
+                controller.signal
+              );
 
-            const result: GenerateImageResponse = imageManualSelection
-              ? await api.generateWithSearch(
-                  singleBody,
-                  imageManualSelection.provider,
-                  imageManualSelection.model,
-                  controller.signal
-                )
-              : await api.generateWithSearch(
-                  { ...singleBody, quality_preset: qualityPreset },
-                  undefined,
-                  undefined,
-                  controller.signal
-                );
-
-            setProgress(100);
-            const imageUrl = getImageUrl(result.image.url || result.image.key);
-            setGeneratedImages([
-              {
-                url: imageUrl,
-                provider: result.provider,
-                model: result.model,
-                model_display_name: result.model_display_name,
-                duration: result.duration,
-                mode: result.mode,
-                settings: result.settings
-                  ? {
-                      aspect_ratio: result.settings.aspect_ratio,
-                      resolution: result.settings.resolution,
-                    }
-                  : undefined,
-                processed_prompt: result.processed_prompt,
-                width: result.image.width,
-                height: result.image.height,
-                created_at: result.created_at,
-              },
-            ]);
-            setState("result");
-            setIsGenerating(false);
-            setEnhancePrompt(false);
-            onCompleteRef.current?.();
-            const t = getTranslations();
-            if (result.processed_prompt) {
-              toast.success(t.generation.complete, {
-                description: interpolate(t.generation.completeWithPrompt, {
-                  prompt: result.processed_prompt.slice(0, 80),
-                }),
-              });
-            } else {
-              toast.success(t.generation.complete);
-            }
-          } else {
-            // Async generation — get task_id, delegate to useTaskProgress
-            const controller = new AbortController();
-            abortControllerRef.current = controller;
-
-            const result = imageManualSelection
-              ? await api.generateImage(
-                  singleBody,
-                  imageManualSelection.provider,
-                  imageManualSelection.model,
-                  controller.signal
-                )
-              : await api.generateImage(
-                  { ...singleBody, quality_preset: qualityPreset },
-                  undefined,
-                  undefined,
-                  controller.signal
-                );
-
-            setTaskId(result.task_id);
-          }
+          setTaskId(result.task_id);
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;

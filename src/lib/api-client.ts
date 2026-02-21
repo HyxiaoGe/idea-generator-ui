@@ -183,7 +183,7 @@ export class ApiClient {
     provider?: string,
     model?: string,
     signal?: AbortSignal
-  ): Promise<GenerateImageResponse> {
+  ): Promise<AsyncGenerateResponse> {
     const headers: Record<string, string> = {};
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;

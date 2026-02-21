@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { X, Plus, Download, RotateCw } from "lucide-react";
+import useSWR from "swr";
+import { X, Plus, Download, RotateCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,9 +22,12 @@ import { useQuota } from "@/lib/quota/quota-context";
 import { useTranslation } from "@/lib/i18n";
 import { getApiClient } from "@/lib/api-client";
 import { showErrorToast } from "@/lib/error-toast";
-import { getImageUrl } from "@/lib/transforms";
+import { getImageUrl, inferContentType } from "@/lib/transforms";
 import { useTaskProgress } from "@/lib/hooks/use-task-progress";
+import { useAuth } from "@/lib/auth/auth-context";
+import { ProgressiveImage } from "@/components/progressive-image";
 import { ImagePickerDialog, type SelectedImage } from "@/components/image-picker-dialog";
+import type { PaginatedResponse, HistoryItem } from "@/lib/types";
 
 type BlendState = "idle" | "generating" | "result";
 
@@ -31,6 +35,7 @@ export default function BlendPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { checkBeforeGenerate, refreshQuota } = useQuota();
+  const { isAuthenticated } = useAuth();
 
   const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
   const [blendPrompt, setBlendPrompt] = useState("");
@@ -39,6 +44,17 @@ export default function BlendPage() {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Recent generations for quick selection
+  const { data: historyData } = useSWR<PaginatedResponse<HistoryItem>>(
+    isAuthenticated ? "/history?limit=12" : null
+  );
+  const recentImages = useMemo(() => {
+    if (!historyData?.items) return [];
+    return historyData.items.filter(
+      (item) => item.r2_key && inferContentType(item.filename) === "image"
+    );
+  }, [historyData]);
 
   const { progress } = useTaskProgress(taskId, {
     onComplete: (tp) => {
@@ -67,6 +83,24 @@ export default function BlendPage() {
 
   const removeImage = useCallback((index: number) => {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const toggleRecentImage = useCallback((item: HistoryItem) => {
+    const key = item.r2_key!;
+    setSelectedImages((prev) => {
+      if (prev.some((s) => s.key === key)) {
+        return prev.filter((s) => s.key !== key);
+      }
+      if (prev.length >= 4) return prev;
+      return [
+        ...prev,
+        {
+          key,
+          previewUrl: getImageUrl(item.url || item.r2_key),
+          label: item.prompt?.slice(0, 40),
+        },
+      ];
+    });
   }, []);
 
   const handleBlend = async () => {
@@ -182,6 +216,53 @@ export default function BlendPage() {
             </button>
           )}
         </div>
+
+        {/* Recent generations quick select */}
+        {recentImages.length > 0 && state !== "generating" && state !== "result" && (
+          <div className="mb-6">
+            <h3 className="text-text-primary mb-3 text-sm font-semibold">
+              {t("recentGenerations.title")}
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {recentImages.map((item) => {
+                const key = item.r2_key!;
+                const checked = selectedImages.some((s) => s.key === key);
+                const idx = selectedImages.findIndex((s) => s.key === key);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => toggleRecentImage(item)}
+                    className={`group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                      checked
+                        ? "border-primary-start ring-primary-start/30 ring-2"
+                        : "border-border hover:border-primary-start/50"
+                    } ${!checked && selectedImages.length >= 4 ? "cursor-not-allowed opacity-50" : ""}`}
+                    disabled={!checked && selectedImages.length >= 4}
+                  >
+                    <ProgressiveImage
+                      src={getImageUrl(item.url || item.r2_key)}
+                      alt={item.prompt?.slice(0, 40) || "image"}
+                      aspectRatio="square"
+                      eager
+                      className="h-full w-full"
+                    />
+                    {checked && (
+                      <div className="from-primary-start to-primary-end absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-bold text-white">
+                        {idx + 1}
+                      </div>
+                    )}
+                    {!checked && selectedImages.length < 4 && (
+                      <div className="bg-background/60 border-border absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full border opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Blend instruction + mode */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">

@@ -6,6 +6,7 @@ import { Check, ImageIcon, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -198,6 +199,9 @@ export function ImagePickerDialog({
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("imagePicker.title")}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("imagePicker.minImages", { min: minImages })}
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="history" className="w-full">
