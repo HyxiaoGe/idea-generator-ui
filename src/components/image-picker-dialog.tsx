@@ -23,6 +23,7 @@ import type {
   HistoryItem,
   TemplateListResponse,
   TemplateListItem,
+  TemplateCategoryInfo,
 } from "@/lib/types";
 
 export interface SelectedImage {
@@ -35,6 +36,7 @@ interface ImagePickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (images: SelectedImage[]) => void;
+  initialSelection?: SelectedImage[];
   minImages?: number;
   maxImages?: number;
 }
@@ -45,6 +47,7 @@ export function ImagePickerDialog({
   open,
   onOpenChange,
   onConfirm,
+  initialSelection,
   minImages = 2,
   maxImages = 4,
 }: ImagePickerDialogProps) {
@@ -53,16 +56,29 @@ export function ImagePickerDialog({
   const [selected, setSelected] = useState<SelectedImage[]>([]);
   const [templatePage, setTemplatePage] = useState(1);
   const [allTemplates, setAllTemplates] = useState<TemplateListItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   // History: single request, 50 items is usually enough
   const { data: historyData, isLoading: historyLoading } = useSWR<PaginatedResponse<HistoryItem>>(
     open && isAuthenticated ? "/history?limit=50" : null
   );
 
-  // Templates: paginated
-  const { data: templateData, isLoading: templateLoading } = useSWR<TemplateListResponse>(
-    open ? `/templates?media_type=image&page_size=${TEMPLATE_PAGE_SIZE}&page=${templatePage}` : null
+  // Template categories
+  const { data: categoriesData } = useSWR<TemplateCategoryInfo[]>(
+    open ? "/templates/categories?media_type=image" : null
   );
+
+  const categoryList = useMemo(() => {
+    if (!categoriesData) return ["all"];
+    return ["all", ...categoriesData.map((c) => c.category)];
+  }, [categoriesData]);
+
+  // Templates: paginated, filtered by category
+  const templateKey = open
+    ? `/templates?media_type=image&page_size=${TEMPLATE_PAGE_SIZE}&page=${templatePage}${selectedCategory !== "all" ? `&category=${selectedCategory}` : ""}`
+    : null;
+  const { data: templateData, isLoading: templateLoading } =
+    useSWR<TemplateListResponse>(templateKey);
 
   // Accumulate template pages
   useEffect(() => {
@@ -77,13 +93,16 @@ export function ImagePickerDialog({
     }
   }, [templateData, templatePage]);
 
-  // Reset pagination when dialog closes
+  // Restore initial selection when dialog opens; reset state when it closes
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setSelected(initialSelection ?? []);
+    } else {
       setTemplatePage(1);
       setAllTemplates([]);
+      setSelectedCategory("all");
     }
-  }, [open]);
+  }, [open, initialSelection]);
 
   const hasMoreTemplates = templateData
     ? templatePage * TEMPLATE_PAGE_SIZE < templateData.total
@@ -125,12 +144,10 @@ export function ImagePickerDialog({
 
   const handleConfirm = () => {
     onConfirm(selected);
-    setSelected([]);
     onOpenChange(false);
   };
 
   const handleOpenChange = (value: boolean) => {
-    if (!value) setSelected([]);
     onOpenChange(value);
   };
 
@@ -242,6 +259,27 @@ export function ImagePickerDialog({
           </TabsContent>
 
           <TabsContent value="templates">
+            <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
+              {categoryList.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    if (cat !== selectedCategory) {
+                      setSelectedCategory(cat);
+                      setTemplatePage(1);
+                      setAllTemplates([]);
+                    }
+                  }}
+                  className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                    selectedCategory === cat
+                      ? "from-primary-start to-primary-end bg-gradient-to-r text-white"
+                      : "border-border bg-surface text-text-secondary hover:border-primary-start/50 border"
+                  }`}
+                >
+                  {cat === "all" ? t("templates.allCategory") : t(`enums.templateCategory.${cat}`)}
+                </button>
+              ))}
+            </div>
             <ScrollArea className="h-[400px]">
               {templateLoading && templatePage === 1 ? (
                 renderLoading()

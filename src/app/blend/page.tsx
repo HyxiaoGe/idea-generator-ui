@@ -167,7 +167,7 @@ export default function BlendPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-500 p-0 hover:bg-red-600"
+                      className="absolute top-1.5 right-1.5 h-7 w-7 rounded-full bg-red-500 p-0 hover:bg-red-600"
                       onClick={() => removeImage(index)}
                     >
                       <X className="h-4 w-4 text-white" />
@@ -283,7 +283,14 @@ export default function BlendPage() {
                   <RotateCw className="mr-1.5 h-4 w-4" />
                   {t("blend.reblend")}
                 </Button>
-                <Button variant="outline" className="rounded-xl" onClick={() => router.push("/")}>
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    handleReblend();
+                    setSelectedImages([]);
+                  }}
+                >
                   {t("common.continueCreating")}
                 </Button>
               </div>
@@ -368,6 +375,7 @@ export default function BlendPage() {
           open={pickerOpen}
           onOpenChange={setPickerOpen}
           onConfirm={handlePickerConfirm}
+          initialSelection={selectedImages}
           minImages={2}
           maxImages={4}
         />
