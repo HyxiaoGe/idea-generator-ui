@@ -290,15 +290,23 @@ export interface TranslationKeys {
     downloadOriginal: string;
     retransfer: string;
   };
+  imagePicker: {
+    title: string;
+    myWorks: string;
+    templates: string;
+    selectedCount: string;
+    minImages: string;
+    maxImages: string;
+    confirm: string;
+    noHistory: string;
+    noTemplates: string;
+    loadMore: string;
+  };
   blend: {
     title: string;
-    devWarning: string;
-    devWarningDesc: string;
-    uploadImages: string;
-    dragOrderHint: string;
-    addImage: string;
-    clickToUpload: string;
-    uploadHint: string;
+    selectImages: string;
+    selectedImages: string;
+    minImagesError: string;
     blendInstruction: string;
     blendInstructionPlaceholder: string;
     blendMode: string;
@@ -308,6 +316,7 @@ export interface TranslationKeys {
     startBlend: string;
     blending: string;
     blendResult: string;
+    blendComplete: string;
     downloadOriginal: string;
     reblend: string;
   };
@@ -343,6 +352,8 @@ export interface TranslationKeys {
     blend: string;
     style: string;
     search: string;
+    inpaint: string;
+    outpaint: string;
   };
   lightbox: {
     previous: string;
@@ -405,6 +416,23 @@ export interface TranslationKeys {
       blend: string;
       style: string;
       search: string;
+      inpaint: string;
+      outpaint: string;
+    };
+    maskMode: {
+      user_provided: string;
+      foreground: string;
+      background: string;
+      semantic: string;
+    };
+    describeMode: {
+      describe: string;
+      reverse_prompt: string;
+    };
+    detailLevel: {
+      brief: string;
+      standard: string;
+      detailed: string;
     };
     videoResolution: {
       "480p": string;

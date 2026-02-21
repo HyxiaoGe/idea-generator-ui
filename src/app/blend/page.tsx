@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Download, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,48 +15,94 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "motion/react";
+import { toast } from "sonner";
+import { RequireAuth } from "@/lib/auth/require-auth";
+import { useQuota } from "@/lib/quota/quota-context";
 import { useTranslation } from "@/lib/i18n";
+import { getApiClient } from "@/lib/api-client";
+import { showErrorToast } from "@/lib/error-toast";
+import { getImageUrl } from "@/lib/transforms";
+import { useTaskProgress } from "@/lib/hooks/use-task-progress";
+import { ImagePickerDialog, type SelectedImage } from "@/components/image-picker-dialog";
+
+type BlendState = "idle" | "generating" | "result";
 
 export default function BlendPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [images, setImages] = useState<string[]>([]);
-  const [instruction, setInstruction] = useState("");
-  const [state, setState] = useState<"idle" | "loading" | "result">("idle");
-  const [progress, setProgress] = useState(0);
-  const [resultImage] = useState(
-    "https://images.unsplash.com/photo-1672581437674-3186b17b405a?w=800"
-  );
+  const { checkBeforeGenerate, refreshQuota } = useQuota();
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && images.length < 6) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setImages([...images, result]);
-      };
-      reader.readAsDataURL(file);
+  const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
+  const [blendPrompt, setBlendPrompt] = useState("");
+  const [_blendMode, setBlendMode] = useState("smart");
+  const [state, setState] = useState<BlendState>("idle");
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const { progress } = useTaskProgress(taskId, {
+    onComplete: (tp) => {
+      const url = tp.result?.image
+        ? getImageUrl(tp.result.image.url || tp.result.image.key)
+        : tp.results?.length
+          ? getImageUrl(tp.results[0].url || tp.results[0].key)
+          : null;
+      setResultImageUrl(url);
+      setState("result");
+      refreshQuota();
+      toast.success(t("blend.blendComplete"));
+    },
+    onFailed: (tp) => {
+      setState("idle");
+      setTaskId(null);
+      toast.error(t("generation.failed"), {
+        description: tp.errors?.join(", ") || tp.error || t("common.retry"),
+      });
+    },
+  });
+
+  const handlePickerConfirm = useCallback((images: SelectedImage[]) => {
+    setSelectedImages(images);
+  }, []);
+
+  const removeImage = useCallback((index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleBlend = async () => {
+    if (selectedImages.length < 2) {
+      toast.error(t("blend.minImagesError"));
+      return;
+    }
+    const allowed = await checkBeforeGenerate();
+    if (!allowed) return;
+
+    setState("generating");
+    try {
+      const api = getApiClient();
+      const result = await api.blendImages({
+        image_keys: selectedImages.map((img) => img.key),
+        blend_prompt: blendPrompt || undefined,
+      });
+      setTaskId(result.task_id);
+    } catch (error) {
+      setState("idle");
+      showErrorToast(error, t("generation.failed"));
     }
   };
 
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+  const handleReblend = () => {
+    setState("idle");
+    setTaskId(null);
+    setResultImageUrl(null);
   };
 
-  const handleBlend = () => {
-    setState("loading");
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setState("result");
-          return 100;
-        }
-        return prev + 5;
-      });
-    }, 200);
+  const handleDownload = () => {
+    if (!resultImageUrl) return;
+    const a = document.createElement("a");
+    a.href = resultImageUrl;
+    a.download = `blend-${Date.now()}.png`;
+    a.click();
   };
 
   return (
@@ -66,144 +112,165 @@ export default function BlendPage() {
         <h1 className="text-text-primary text-2xl font-semibold">{t("blend.title")}</h1>
       </div>
 
-      <div className="border-warning/30 bg-warning/10 mb-6 rounded-2xl border p-4">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🚧</span>
-          <div>
-            <h3 className="text-text-primary font-semibold">{t("blend.devWarning")}</h3>
-            <p className="text-text-secondary text-sm">{t("blend.devWarningDesc")}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-text-primary font-semibold">
-            {t("blend.uploadImages", { current: images.length })}
-          </h3>
-          {images.length > 0 && (
-            <p className="text-text-secondary text-xs">{t("blend.dragOrderHint")}</p>
+      <RequireAuth>
+        {/* Selected images section */}
+        <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
+          {selectedImages.length > 0 && (
+            <h3 className="text-text-primary mb-4 font-semibold">
+              {t("blend.selectedImages", { count: selectedImages.length })}
+            </h3>
           )}
-        </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          {images.map((img, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="group border-border relative aspect-square overflow-hidden rounded-xl border"
+          {selectedImages.length > 0 ? (
+            <div className="grid grid-cols-4 gap-4">
+              {selectedImages.map((img, index) => (
+                <motion.div
+                  key={img.key}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="group border-border relative aspect-square overflow-hidden rounded-xl border"
+                >
+                  <img
+                    src={img.previewUrl}
+                    alt={img.label || `Image ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  {state !== "generating" && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-500 p-0 hover:bg-red-600"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </Button>
+                  )}
+                  <div className="absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
+                    {index + 1}
+                  </div>
+                  {img.label && (
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent px-2 pt-6 pb-2">
+                      <p className="truncate text-xs text-white/80">{img.label}</p>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+              {selectedImages.length < 4 && state !== "generating" && (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square items-center justify-center rounded-xl border-2 border-dashed transition-all"
+                >
+                  <Plus className="text-text-secondary h-8 w-8" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="border-border bg-background hover:bg-surface hover:border-primary-start flex w-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed py-12 transition-all"
             >
-              <img src={img} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
-              <Button
-                size="sm"
-                variant="secondary"
-                className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-500 p-0 hover:bg-red-600"
-                onClick={() => removeImage(index)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <div className="absolute bottom-2 left-2 rounded-lg bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
-                {index + 1}
+              <div className="text-center">
+                <div className="from-primary-start/20 to-primary-end/20 mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
+                  <Plus className="text-primary-start h-8 w-8" />
+                </div>
+                <p className="text-text-primary mb-1 text-sm font-medium">
+                  {t("blend.selectImages")}
+                </p>
               </div>
-            </motion.div>
-          ))}
-
-          {images.length < 6 && (
-            <label className="border-border bg-background hover:bg-surface hover:border-primary-start flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all">
-              <div className="from-primary-start/20 to-primary-end/20 mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
-                <Plus className="text-primary-start h-6 w-6" />
-              </div>
-              <p className="text-text-secondary text-xs">{t("blend.addImage")}</p>
-              <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-            </label>
+            </button>
           )}
         </div>
 
-        {images.length === 0 && (
-          <label className="border-border bg-background hover:bg-surface hover:border-primary-start mt-4 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed py-12 transition-all">
-            <div className="text-center">
-              <div className="from-primary-start/20 to-primary-end/20 mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-3xl">
-                🖼️
-              </div>
-              <p className="text-text-primary mb-1 text-sm font-medium">
-                {t("blend.clickToUpload")}
-              </p>
-              <p className="text-text-secondary text-xs">{t("blend.uploadHint")}</p>
-            </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+        {/* Blend instruction + mode */}
+        <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
+          <label className="text-text-primary mb-3 block font-semibold">
+            {t("blend.blendInstruction")}
           </label>
-        )}
-      </div>
+          <Textarea
+            placeholder={t("blend.blendInstructionPlaceholder")}
+            value={blendPrompt}
+            onChange={(e) => setBlendPrompt(e.target.value)}
+            className="mb-4 min-h-[100px] resize-none rounded-xl"
+            disabled={state === "generating"}
+          />
 
-      <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
-        <label className="text-text-primary mb-3 block font-semibold">
-          {t("blend.blendInstruction")}
-        </label>
-        <Textarea
-          placeholder={t("blend.blendInstructionPlaceholder")}
-          value={instruction}
-          onChange={(e) => setInstruction(e.target.value)}
-          className="mb-4 min-h-[100px] resize-none rounded-xl"
-        />
-
-        <div>
-          <label className="text-text-secondary mb-2 block text-xs">{t("blend.blendMode")}</label>
-          <Select defaultValue="smart">
-            <SelectTrigger className="rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="smart">{t("blend.smartBlend")}</SelectItem>
-              <SelectItem value="style">{t("blend.styleUnify")}</SelectItem>
-              <SelectItem value="collage">{t("blend.elementCollage")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <Button
-        onClick={handleBlend}
-        disabled={images.length < 2 || state === "loading"}
-        className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 mb-6 w-full rounded-xl bg-gradient-to-r py-6"
-      >
-        {t("blend.startBlend")}
-      </Button>
-
-      {state === "loading" && (
-        <div className="border-border bg-surface mb-6 rounded-2xl border p-8">
-          <div className="mb-4 text-center">
-            <p className="text-text-primary mb-2 text-lg font-semibold">{t("blend.blending")}</p>
-            <p className="text-text-secondary text-sm">{progress}%</p>
+          <div>
+            <label className="text-text-secondary mb-2 block text-xs">{t("blend.blendMode")}</label>
+            <Select
+              defaultValue="smart"
+              onValueChange={setBlendMode}
+              disabled={state === "generating"}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="smart">{t("blend.smartBlend")}</SelectItem>
+                <SelectItem value="style">{t("blend.styleUnify")}</SelectItem>
+                <SelectItem value="collage">{t("blend.elementCollage")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Progress value={progress} className="h-2" />
         </div>
-      )}
 
-      {state === "result" && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="mb-4 flex items-center justify-center gap-4">
-            <div className="bg-border h-px flex-1"></div>
-            <span className="text-text-secondary text-sm">{t("blend.blendResult")}</span>
-            <div className="bg-border h-px flex-1"></div>
-          </div>
+        {/* Start blend button */}
+        <Button
+          onClick={handleBlend}
+          disabled={selectedImages.length < 2 || state === "generating"}
+          className="from-primary-start to-primary-end hover:from-primary-start/90 hover:to-primary-end/90 mb-6 w-full rounded-xl bg-gradient-to-r py-6"
+        >
+          {state === "generating" ? t("blend.blending") : t("blend.startBlend")}
+        </Button>
 
-          <div className="border-border bg-surface rounded-2xl border p-6">
-            <img src={resultImage} alt="Blended result" className="mb-4 w-full rounded-xl" />
-            <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" className="rounded-xl">
-                {t("blend.downloadOriginal")}
-              </Button>
-              <Button variant="outline" className="rounded-xl">
-                {t("blend.reblend")}
-              </Button>
-              <Button variant="outline" className="rounded-xl" onClick={() => router.push("/")}>
-                {t("common.continueCreating")}
-              </Button>
+        {/* Progress */}
+        {state === "generating" && (
+          <div className="border-border bg-surface mb-6 rounded-2xl border p-8">
+            <div className="mb-4 text-center">
+              <p className="text-text-primary mb-2 text-lg font-semibold">{t("blend.blending")}</p>
+              <p className="text-text-secondary text-sm">{progress}%</p>
             </div>
+            <Progress value={progress} className="h-2" />
           </div>
-        </motion.div>
-      )}
+        )}
+
+        {/* Result */}
+        {state === "result" && resultImageUrl && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="mb-4 flex items-center justify-center gap-4">
+              <div className="bg-border h-px flex-1" />
+              <span className="text-text-secondary text-sm">{t("blend.blendResult")}</span>
+              <div className="bg-border h-px flex-1" />
+            </div>
+
+            <div className="border-border bg-surface rounded-2xl border p-6">
+              <img src={resultImageUrl} alt="Blended result" className="mb-4 w-full rounded-xl" />
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" className="rounded-xl" onClick={handleDownload}>
+                  <Download className="mr-1.5 h-4 w-4" />
+                  {t("blend.downloadOriginal")}
+                </Button>
+                <Button variant="outline" className="rounded-xl" onClick={handleReblend}>
+                  <RotateCw className="mr-1.5 h-4 w-4" />
+                  {t("blend.reblend")}
+                </Button>
+                <Button variant="outline" className="rounded-xl" onClick={() => router.push("/")}>
+                  {t("common.continueCreating")}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        <ImagePickerDialog
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          onConfirm={handlePickerConfirm}
+          minImages={2}
+          maxImages={4}
+        />
+      </RequireAuth>
     </div>
   );
 }

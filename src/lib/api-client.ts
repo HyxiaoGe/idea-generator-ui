@@ -5,6 +5,11 @@ import type {
   GenerateTaskProgress,
   BatchGenerateRequest,
   BatchGenerateResponse,
+  BlendImagesRequest,
+  InpaintRequest,
+  OutpaintRequest,
+  DescribeImageRequest,
+  DescribeImageResponse,
   ProviderInfo,
   SendMessageResponse,
   ChatHistoryResponse,
@@ -195,6 +200,49 @@ export class ApiClient {
     if (provider) headers["X-Provider"] = provider;
     if (model) headers["X-Model"] = model;
     return this.request("POST", "/generate/batch", { body: req, headers, signal });
+  }
+
+  async blendImages(
+    req: BlendImagesRequest,
+    provider?: string,
+    model?: string,
+    signal?: AbortSignal
+  ): Promise<AsyncGenerateResponse> {
+    const headers: Record<string, string> = {};
+    if (provider) headers["X-Provider"] = provider;
+    if (model) headers["X-Model"] = model;
+    return this.request("POST", "/generate/blend", { body: req, headers, signal });
+  }
+
+  async inpaint(
+    req: InpaintRequest,
+    provider?: string,
+    model?: string,
+    signal?: AbortSignal
+  ): Promise<AsyncGenerateResponse> {
+    const headers: Record<string, string> = {};
+    if (provider) headers["X-Provider"] = provider;
+    if (model) headers["X-Model"] = model;
+    return this.request("POST", "/generate/inpaint", { body: req, headers, signal });
+  }
+
+  async outpaint(
+    req: OutpaintRequest,
+    provider?: string,
+    model?: string,
+    signal?: AbortSignal
+  ): Promise<AsyncGenerateResponse> {
+    const headers: Record<string, string> = {};
+    if (provider) headers["X-Provider"] = provider;
+    if (model) headers["X-Model"] = model;
+    return this.request("POST", "/generate/outpaint", { body: req, headers, signal });
+  }
+
+  async describeImage(
+    req: DescribeImageRequest,
+    signal?: AbortSignal
+  ): Promise<DescribeImageResponse> {
+    return this.request("POST", "/generate/describe", { body: req, signal });
   }
 
   async getTaskProgress(taskId: string): Promise<GenerateTaskProgress> {

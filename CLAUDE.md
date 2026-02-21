@@ -17,7 +17,7 @@ The frontend connects to a FastAPI backend (Nano Banana Lab) for:
 - **Quota**: Real-time quota tracking via `/api/quota`
 - **WebSocket**: Real-time notifications for task progress, generation completion, quota warnings
 
-**Not yet integrated** (kept as mock): Style Transfer (`/style`) and Image Blend (`/blend`) — backend has no dedicated endpoints.
+**Not yet integrated** (kept as mock): Style Transfer (`/style`) — backend has no dedicated endpoint.
 
 ## Commands
 

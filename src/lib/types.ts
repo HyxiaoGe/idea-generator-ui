@@ -3,9 +3,20 @@
 export type AspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4";
 export type Resolution = "1K" | "2K" | "4K";
 export type SafetyLevel = "strict" | "moderate" | "relaxed" | "none";
-export type GenerationMode = "basic" | "chat" | "batch" | "blend" | "style" | "search";
+export type GenerationMode =
+  | "basic"
+  | "chat"
+  | "batch"
+  | "blend"
+  | "style"
+  | "search"
+  | "inpaint"
+  | "outpaint";
 export type QualityPreset = "premium" | "balanced" | "fast";
 export type HealthStatus = "healthy" | "degraded" | "unhealthy";
+export type MaskMode = "user_provided" | "foreground" | "background" | "semantic";
+export type DescribeMode = "describe" | "reverse_prompt";
+export type DetailLevel = "brief" | "standard" | "detailed";
 
 // ===== Generic =====
 
@@ -151,6 +162,50 @@ export interface TaskProgress {
   errors: string[];
   started_at?: string;
   completed_at?: string;
+}
+
+// ===== Blend / Inpaint / Outpaint / Describe =====
+
+export interface BlendImagesRequest {
+  image_keys: string[];
+  blend_prompt?: string;
+  settings?: Partial<GenerationSettings>;
+}
+
+export interface InpaintRequest {
+  image_key: string;
+  prompt: string;
+  mask_key?: string;
+  mask_mode?: MaskMode;
+  mask_dilation?: number;
+  remove_mode?: boolean;
+  negative_prompt?: string;
+  settings?: Partial<GenerationSettings>;
+}
+
+export interface OutpaintRequest {
+  image_key: string;
+  mask_key: string;
+  prompt?: string;
+  negative_prompt?: string;
+  settings?: Partial<GenerationSettings>;
+}
+
+export interface DescribeImageRequest {
+  image_key: string;
+  mode?: DescribeMode;
+  detail_level?: DetailLevel;
+  include_tags?: boolean;
+  language?: string;
+}
+
+export interface DescribeImageResponse {
+  description: string;
+  prompt?: string;
+  tags: string[];
+  duration: number;
+  provider?: string;
+  model?: string;
 }
 
 // ===== Chat =====
@@ -386,6 +441,8 @@ export interface TemplateListItem {
   description_en?: string;
   description_zh?: string;
   preview_image_url?: string;
+  preview_4k_url?: string;
+  preview_storage_key?: string;
   category: string;
   tags: string[];
   difficulty: string;
@@ -407,6 +464,8 @@ export interface TemplateDetailResponse {
   description_en?: string;
   description_zh?: string;
   preview_image_url?: string;
+  preview_4k_url?: string;
+  preview_storage_key?: string;
   category: string;
   tags: string[];
   style_keywords: string[];

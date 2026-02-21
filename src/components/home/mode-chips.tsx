@@ -21,13 +21,11 @@ export function ModeChips({ contentType }: ModeChipsProps) {
   const imageChips: ChipDef[] = [
     { emoji: "💬", label: t("modes.chatRefine"), path: "/chat" },
     { emoji: "🎨", label: t("modes.styleTransfer"), path: "/style", demo: true },
-    { emoji: "🖼️", label: t("modes.imageBlend"), path: "/blend", demo: true },
-    { emoji: "🎬", label: t("modes.imageToVideo"), path: "/image-to-video" },
+    { emoji: "🖼️", label: t("modes.imageBlend"), path: "/blend" },
   ];
 
   const videoChips: ChipDef[] = [
     { emoji: "🎬", label: t("modes.imageToVideo"), path: "/image-to-video" },
-    { emoji: "💬", label: t("modes.chatRefine"), path: "/chat" },
   ];
 
   const chips = contentType === "image" ? imageChips : videoChips;

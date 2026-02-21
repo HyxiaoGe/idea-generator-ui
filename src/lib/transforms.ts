@@ -37,6 +37,8 @@ export function getModeDisplayName(mode: string): string {
     blend: t.modeNames.blend,
     style: t.modeNames.style,
     search: t.modeNames.search,
+    inpaint: t.modeNames.inpaint,
+    outpaint: t.modeNames.outpaint,
   };
   return modeMap[mode] || mode;
 }
