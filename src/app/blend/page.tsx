@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { X, Plus, Download, RotateCw, Check } from "lucide-react";
+import { X, Plus, Download, RotateCw, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,10 +22,11 @@ import { useQuota } from "@/lib/quota/quota-context";
 import { useTranslation } from "@/lib/i18n";
 import { getApiClient } from "@/lib/api-client";
 import { showErrorToast } from "@/lib/error-toast";
-import { getImageUrl, inferContentType } from "@/lib/transforms";
+import { getImageUrl } from "@/lib/transforms";
 import { useTaskProgress } from "@/lib/hooks/use-task-progress";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ProgressiveImage } from "@/components/progressive-image";
+import { ImageLightbox, type LightboxSlide } from "@/components/image-lightbox";
 import { ImagePickerDialog, type SelectedImage } from "@/components/image-picker-dialog";
 import type { PaginatedResponse, HistoryItem } from "@/lib/types";
 
@@ -44,17 +45,27 @@ export default function BlendPage() {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Recent generations for quick selection
-  const { data: historyData } = useSWR<PaginatedResponse<HistoryItem>>(
-    isAuthenticated ? "/history?limit=12" : null
+  // Recent blend results
+  const {
+    data: blendHistoryData,
+    isLoading: blendHistoryLoading,
+    mutate: refreshBlendHistory,
+  } = useSWR<PaginatedResponse<HistoryItem>>(
+    isAuthenticated ? "/history?limit=6&mode=blend" : null
   );
-  const recentImages = useMemo(() => {
-    if (!historyData?.items) return [];
-    return historyData.items.filter(
-      (item) => item.r2_key && inferContentType(item.filename) === "image"
-    );
-  }, [historyData]);
+  const recentBlends = useMemo(() => blendHistoryData?.items || [], [blendHistoryData]);
+  const recentLightboxSlides: LightboxSlide[] = useMemo(
+    () =>
+      recentBlends.map((item) => ({
+        src: getImageUrl(item.url || item.r2_key),
+        alt: item.prompt,
+        historyItem: item,
+      })),
+    [recentBlends]
+  );
 
   const { progress } = useTaskProgress(taskId, {
     onComplete: (tp) => {
@@ -66,6 +77,7 @@ export default function BlendPage() {
       setResultImageUrl(url);
       setState("result");
       refreshQuota();
+      refreshBlendHistory();
       toast.success(t("blend.blendComplete"));
     },
     onFailed: (tp) => {
@@ -83,24 +95,6 @@ export default function BlendPage() {
 
   const removeImage = useCallback((index: number) => {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const toggleRecentImage = useCallback((item: HistoryItem) => {
-    const key = item.r2_key!;
-    setSelectedImages((prev) => {
-      if (prev.some((s) => s.key === key)) {
-        return prev.filter((s) => s.key !== key);
-      }
-      if (prev.length >= 4) return prev;
-      return [
-        ...prev,
-        {
-          key,
-          previewUrl: getImageUrl(item.url || item.r2_key),
-          label: item.prompt?.slice(0, 40),
-        },
-      ];
-    });
   }, []);
 
   const handleBlend = async () => {
@@ -217,53 +211,6 @@ export default function BlendPage() {
           )}
         </div>
 
-        {/* Recent generations quick select */}
-        {recentImages.length > 0 && state !== "generating" && state !== "result" && (
-          <div className="mb-6">
-            <h3 className="text-text-primary mb-3 text-sm font-semibold">
-              {t("recentGenerations.title")}
-            </h3>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {recentImages.map((item) => {
-                const key = item.r2_key!;
-                const checked = selectedImages.some((s) => s.key === key);
-                const idx = selectedImages.findIndex((s) => s.key === key);
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => toggleRecentImage(item)}
-                    className={`group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                      checked
-                        ? "border-primary-start ring-primary-start/30 ring-2"
-                        : "border-border hover:border-primary-start/50"
-                    } ${!checked && selectedImages.length >= 4 ? "cursor-not-allowed opacity-50" : ""}`}
-                    disabled={!checked && selectedImages.length >= 4}
-                  >
-                    <ProgressiveImage
-                      src={getImageUrl(item.url || item.r2_key)}
-                      alt={item.prompt?.slice(0, 40) || "image"}
-                      aspectRatio="square"
-                      eager
-                      className="h-full w-full"
-                    />
-                    {checked && (
-                      <div className="from-primary-start to-primary-end absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-bold text-white">
-                        {idx + 1}
-                      </div>
-                    )}
-                    {!checked && selectedImages.length < 4 && (
-                      <div className="bg-background/60 border-border absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full border opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Blend instruction + mode */}
         <div className="border-border bg-surface mb-6 rounded-2xl border p-6">
           <label className="text-text-primary mb-3 block font-semibold">
@@ -342,6 +289,79 @@ export default function BlendPage() {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* Recent blend history */}
+        {isAuthenticated && (
+          <div className="mt-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-text-primary font-semibold">{t("recentGenerations.title")}</h2>
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/gallery?mode=blend")}
+                className="text-accent hover:text-accent/80"
+              >
+                {t("common.viewAll")}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {blendHistoryLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-elevated aspect-square w-[160px] flex-shrink-0 animate-pulse rounded-xl"
+                  />
+                ))
+              ) : recentBlends.length === 0 ? (
+                <div className="flex w-full items-center justify-center py-8">
+                  <p className="text-text-secondary text-sm">{t("recentGenerations.noRecords")}</p>
+                </div>
+              ) : (
+                recentBlends.map((item, index) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{
+                      delay: index * 0.08,
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20,
+                    }}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    onClick={() => {
+                      setLightboxIndex(index);
+                      setLightboxOpen(true);
+                    }}
+                    className="group relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl"
+                    style={{ width: "160px", height: "160px" }}
+                  >
+                    <ProgressiveImage
+                      src={getImageUrl(item.thumbnail || item.url)}
+                      alt={item.prompt}
+                      aspectRatio="square"
+                      showLoader={false}
+                      loaderSize="sm"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="absolute right-0 bottom-0 left-0 p-3">
+                        <p className="line-clamp-2 text-xs text-white">{item.prompt}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+
+            <ImageLightbox
+              open={lightboxOpen}
+              close={() => setLightboxOpen(false)}
+              slides={recentLightboxSlides}
+              index={lightboxIndex}
+            />
+          </div>
         )}
 
         <ImagePickerDialog
