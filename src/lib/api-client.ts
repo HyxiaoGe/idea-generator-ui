@@ -12,6 +12,8 @@ import type {
   DescribeImageResponse,
   ProviderInfo,
   SendMessageResponse,
+  AsyncChatResponse,
+  ChatTaskProgress,
   ChatHistoryResponse,
   QuotaStatusResponse,
   QuotaCheckResponse,
@@ -286,11 +288,15 @@ export class ApiClient {
   async sendMessage(
     sessionId: string,
     message: string,
-    options?: { aspect_ratio?: string; safety_level?: string }
-  ): Promise<SendMessageResponse> {
+    options?: { aspect_ratio?: string; safety_level?: string; enable_thinking?: boolean }
+  ): Promise<AsyncChatResponse> {
     return this.request("POST", `/chat/${sessionId}/message`, {
       body: { message, ...options },
     });
+  }
+
+  async getChatTaskProgress(taskId: string): Promise<ChatTaskProgress> {
+    return this.request("GET", `/chat/task/${taskId}`);
   }
 
   async getChatHistory(sessionId: string): Promise<ChatHistoryResponse> {

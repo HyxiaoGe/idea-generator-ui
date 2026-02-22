@@ -232,6 +232,20 @@ export interface SendMessageResponse {
   message_count: number;
 }
 
+export interface AsyncChatResponse {
+  task_id: string;
+  status: string;
+}
+
+export interface ChatTaskProgress {
+  task_id: string;
+  status: string;
+  stage?: string;
+  progress: number;
+  result?: SendMessageResponse;
+  error?: string;
+}
+
 export interface ChatHistoryResponse {
   session_id: string;
   messages: ChatMessage[];

@@ -12,10 +12,15 @@ import {
   FileDown,
   Trash2,
   MessageSquare,
+  Brain,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,19 +35,54 @@ import { RequireAuth } from "@/lib/auth/require-auth";
 import { getApiClient } from "@/lib/api-client";
 import { getImageUrl, formatRelativeTime } from "@/lib/transforms";
 import { useTranslation, dateLocaleMap, getTranslations, getCurrentLanguage } from "@/lib/i18n";
-import type { AspectRatio, ListChatsResponse } from "@/lib/types";
+import { useWebSocket } from "@/lib/ws/use-websocket";
+import type {
+  AspectRatio,
+  ListChatsResponse,
+  ChatTaskProgress,
+  SendMessageResponse,
+} from "@/lib/types";
+
+type ChatStage = "loading_history" | "thinking" | "saving" | null;
 
 interface Message {
   id: number;
   role: "user" | "assistant";
   content: string;
   image?: string;
+  thinking?: string;
   version?: number;
   timestamp?: string;
   loading?: boolean;
 }
 
+function ThinkingBlock({ thinking }: { thinking: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation();
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="text-text-secondary hover:text-text-primary flex items-center gap-1 text-xs transition-colors"
+      >
+        <Brain className="h-3 w-3" />
+        {t("chat.thinkingProcess")}
+        {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+      {expanded && (
+        <div className="border-border/50 bg-background/50 mt-1.5 max-h-[200px] overflow-y-auto rounded-lg border p-2.5 text-xs whitespace-pre-wrap">
+          {thinking}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SESSION_STORAGE_KEY = "chat_session_id";
+let _msgIdCounter = 0;
+function nextMsgId() {
+  return ++_msgIdCounter;
+}
 
 export default function ChatPage() {
   const router = useRouter();
@@ -57,7 +97,30 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [showHistory, setShowHistory] = useState(false);
+  const [includeThinking, setIncludeThinking] = useState(false);
+  const [chatStage, setChatStage] = useState<ChatStage>(null);
+  const [chatTaskId, setChatTaskId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatResultRef = useRef<SendMessageResponse | null>(null);
+
+  // Listen for chat WebSocket events
+  useWebSocket("chat:progress", (data) => {
+    console.log("[WS chat:progress]", data);
+    const { stage } = data as { stage: string };
+    setChatStage(stage as ChatStage);
+  });
+  useWebSocket("chat:complete", (data) => {
+    console.log("[WS chat:complete]", data);
+    const { result } = data as { result?: SendMessageResponse };
+    if (result) {
+      chatResultRef.current = result;
+    }
+    setChatStage(null);
+  });
+  useWebSocket("chat:error", (data) => {
+    console.log("[WS chat:error]", data);
+    setChatStage(null);
+  });
 
   // Fetch chat history list
   const { data: chatListData, mutate: mutateChatList } = useSWR<ListChatsResponse>("/chat", null, {
@@ -68,8 +131,8 @@ export default function ChatPage() {
 
   const versions = messages
     .filter((m) => m.role === "assistant" && m.image)
-    .map((m, index) => ({
-      id: m.version || index + 1,
+    .map((m) => ({
+      id: m.version!,
       image: m.image!,
       timestamp: m.timestamp || "",
     }));
@@ -88,14 +151,14 @@ export default function ChatPage() {
         .then((history) => {
           setSessionId(savedSessionId);
           setAspectRatio((history.aspect_ratio as AspectRatio) || "16:9");
-          const restoredMessages: Message[] = history.messages.map((msg, idx) => {
+          const restoredMessages: Message[] = history.messages.map((msg) => {
             const imageUrl = msg.image ? getImageUrl(msg.image.url || msg.image.key) : undefined;
             return {
-              id: idx,
+              id: nextMsgId(),
               role: msg.role,
               content: msg.content,
               image: imageUrl,
-              version: msg.role === "assistant" && imageUrl ? idx : undefined,
+              version: msg.role === "assistant" && imageUrl ? nextMsgId() : undefined,
               timestamp: new Date(msg.timestamp).toLocaleTimeString(
                 dateLocaleMap[getCurrentLanguage()],
                 {
@@ -140,13 +203,104 @@ export default function ChatPage() {
     }
   }, [aspectRatio]);
 
+  // Apply completed chat result to messages
+  const applyChatResult = useCallback(
+    (result: SendMessageResponse) => {
+      const imageUrl = result.image ? getImageUrl(result.image.url || result.image.key) : undefined;
+
+      const assistantMessage: Message = {
+        id: nextMsgId(),
+        role: "assistant",
+        content: result.text || getTranslations().chat.defaultAssistantReply,
+        image: imageUrl,
+        thinking: result.thinking,
+        version: nextMsgId(),
+        timestamp: new Date().toLocaleTimeString(dateLocaleMap[getCurrentLanguage()], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setMessages((prev) => prev.filter((m) => !m.loading).concat(assistantMessage));
+
+      if (imageUrl) {
+        setCurrentVersion(assistantMessage.version!);
+        setCurrentImage(imageUrl);
+      }
+
+      setIsLoading(false);
+      setImageLoading(false);
+      setChatStage(null);
+      setChatTaskId(null);
+      mutateChatList();
+      toast.success(getTranslations().chat.imageGenerated);
+    },
+    [mutateChatList]
+  );
+
+  // Poll chat task until complete
+  useEffect(() => {
+    if (!chatTaskId) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      if (cancelled) return;
+
+      // Check if WS already delivered the result
+      if (chatResultRef.current) {
+        const result = chatResultRef.current;
+        chatResultRef.current = null;
+        applyChatResult(result);
+        return;
+      }
+
+      try {
+        const tp = await getApiClient().getChatTaskProgress(chatTaskId);
+        console.log("[Poll chat:task]", tp.status, tp.stage);
+        if (cancelled) return;
+
+        if (tp.stage) setChatStage(tp.stage as ChatStage);
+
+        if (tp.status === "completed" && tp.result) {
+          applyChatResult(tp.result);
+          return;
+        } else if (tp.status === "failed") {
+          setMessages((prev) => prev.filter((m) => !m.loading));
+          setIsLoading(false);
+          setImageLoading(false);
+          setChatStage(null);
+          setChatTaskId(null);
+          toast.error(getTranslations().chat.sendFailed, {
+            description: tp.error || getTranslations().common.retry,
+          });
+          return;
+        }
+      } catch {
+        // poll error, retry next interval
+      }
+
+      if (!cancelled) {
+        timer = setTimeout(poll, 2000);
+      }
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [chatTaskId, applyChatResult]);
+
   const handleSend = useCallback(
     async (messageOverride?: string) => {
       const text = messageOverride || input.trim();
       if (!text || isLoading) return;
 
       const userMessage: Message = {
-        id: Date.now(),
+        id: nextMsgId(),
         role: "user",
         content: text,
         timestamp: new Date().toLocaleTimeString(dateLocaleMap[getCurrentLanguage()], {
@@ -161,7 +315,7 @@ export default function ChatPage() {
 
       // Show loading message
       const loadingMessage: Message = {
-        id: Date.now() + 1,
+        id: nextMsgId(),
         role: "assistant",
         content: "",
         loading: true,
@@ -182,52 +336,31 @@ export default function ChatPage() {
 
         const api = getApiClient();
         setImageLoading(true);
+        chatResultRef.current = null;
 
-        const result = await api.sendMessage(currentSessionId, text, {
+        // POST returns immediately with task_id
+        const { task_id } = await api.sendMessage(currentSessionId, text, {
           aspect_ratio: aspectRatio,
+          enable_thinking: includeThinking,
         });
 
-        const imageUrl = result.image
-          ? getImageUrl(result.image.url || result.image.key)
-          : undefined;
-
-        const assistantMessage: Message = {
-          id: Date.now() + 2,
-          role: "assistant",
-          content: result.text || getTranslations().chat.defaultAssistantReply,
-          image: imageUrl,
-          version: versions.length + 1,
-          timestamp: new Date().toLocaleTimeString(dateLocaleMap[getCurrentLanguage()], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
-
-        setMessages((prev) => prev.filter((m) => !m.loading).concat(assistantMessage));
-
-        if (imageUrl) {
-          setCurrentVersion(assistantMessage.version!);
-          setCurrentImage(imageUrl);
-        }
-
-        setIsLoading(false);
-        setImageLoading(false);
-        mutateChatList();
-        toast.success(getTranslations().chat.imageGenerated);
+        // Start polling — result comes via poll or WS
+        setChatTaskId(task_id);
       } catch (error) {
         setMessages((prev) => prev.filter((m) => !m.loading));
         setIsLoading(false);
         setImageLoading(false);
+        setChatStage(null);
         const tr = getTranslations();
         const message = error instanceof Error ? error.message : tr.chat.sendFailed;
         toast.error(tr.chat.sendFailed, { description: message });
       }
     },
-    [input, isLoading, sessionId, createSession, versions.length, aspectRatio, mutateChatList]
+    [input, isLoading, sessionId, createSession, aspectRatio, includeThinking]
   );
 
   const handleExampleClick = (text: string) => {
-    setInput(text);
+    handleSend(text);
   };
 
   const handleNewChat = useCallback(() => {
@@ -245,14 +378,14 @@ export default function ChatPage() {
       const history = await api.getChatHistory(newSessionId);
       setSessionId(newSessionId);
       setAspectRatio((history.aspect_ratio as AspectRatio) || "16:9");
-      const restoredMessages: Message[] = history.messages.map((msg, idx) => {
+      const restoredMessages: Message[] = history.messages.map((msg) => {
         const imageUrl = msg.image ? getImageUrl(msg.image.url || msg.image.key) : undefined;
         return {
-          id: idx,
+          id: nextMsgId(),
           role: msg.role,
           content: msg.content,
           image: imageUrl,
-          version: msg.role === "assistant" && imageUrl ? idx : undefined,
+          version: msg.role === "assistant" && imageUrl ? nextMsgId() : undefined,
           timestamp: new Date(msg.timestamp).toLocaleTimeString(dateLocaleMap[language], {
             hour: "2-digit",
             minute: "2-digit",
@@ -473,6 +606,24 @@ export default function ChatPage() {
                 </motion.button>
               ))}
             </div>
+
+            <div className="mt-8 flex w-full max-w-xl gap-2">
+              <Input
+                placeholder={t("chat.chatInputPlaceholder")}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                disabled={isLoading}
+                className="flex-1 rounded-xl"
+              />
+              <Button
+                onClick={() => handleSend()}
+                disabled={!input.trim() || isLoading}
+                className="from-primary-start to-primary-end rounded-xl bg-gradient-to-r disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-[45%,55%]">
@@ -625,25 +776,35 @@ export default function ChatPage() {
                         }`}
                       >
                         {message.loading ? (
-                          <div className="flex gap-1 py-2">
+                          <div className="flex items-center gap-2 py-1">
                             <motion.div
-                              className="bg-text-secondary h-2 w-2 rounded-full"
-                              animate={{ y: [0, -8, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                              className="bg-text-secondary h-1.5 w-1.5 rounded-full"
+                              animate={{ opacity: [0.3, 1, 0.3] }}
+                              transition={{ duration: 1.2, repeat: Infinity, delay: 0 }}
                             />
                             <motion.div
-                              className="bg-text-secondary h-2 w-2 rounded-full"
-                              animate={{ y: [0, -8, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                              className="bg-text-secondary h-1.5 w-1.5 rounded-full"
+                              animate={{ opacity: [0.3, 1, 0.3] }}
+                              transition={{ duration: 1.2, repeat: Infinity, delay: 0.3 }}
                             />
                             <motion.div
-                              className="bg-text-secondary h-2 w-2 rounded-full"
-                              animate={{ y: [0, -8, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                              className="bg-text-secondary h-1.5 w-1.5 rounded-full"
+                              animate={{ opacity: [0.3, 1, 0.3] }}
+                              transition={{ duration: 1.2, repeat: Infinity, delay: 0.6 }}
                             />
+                            <span className="text-text-secondary text-xs">
+                              {chatStage === "loading_history"
+                                ? t("chat.stageLoadingHistory")
+                                : chatStage === "thinking"
+                                  ? t("chat.stageThinking")
+                                  : chatStage === "saving"
+                                    ? t("chat.stageSaving")
+                                    : t("chat.stageGenerating")}
+                            </span>
                           </div>
                         ) : (
                           <>
+                            {message.thinking && <ThinkingBlock thinking={message.thinking} />}
                             <p className="text-sm">{message.content}</p>
                             {message.image && (
                               <button
@@ -651,9 +812,9 @@ export default function ChatPage() {
                                   setCurrentImage(message.image!);
                                   setCurrentVersion(message.version || 1);
                                 }}
-                                className="mt-2 overflow-hidden rounded-lg transition-transform hover:scale-105"
+                                className="text-primary-start hover:text-primary-end mt-1.5 flex items-center gap-1 text-xs transition-colors"
                               >
-                                <img src={message.image} alt="Generated" className="w-full" />
+                                🖼 {t("chat.viewImage")} v{message.version}
                               </button>
                             )}
                           </>
@@ -672,6 +833,21 @@ export default function ChatPage() {
               </div>
 
               <div className="border-border border-t p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Switch
+                    id="thinking-toggle"
+                    checked={includeThinking}
+                    onCheckedChange={setIncludeThinking}
+                    disabled={isLoading}
+                  />
+                  <Label
+                    htmlFor="thinking-toggle"
+                    className="text-text-secondary flex cursor-pointer items-center gap-1 text-xs"
+                  >
+                    <Brain className="h-3.5 w-3.5" />
+                    {t("chat.thinkingMode")}
+                  </Label>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     placeholder={t("chat.chatInputPlaceholder")}

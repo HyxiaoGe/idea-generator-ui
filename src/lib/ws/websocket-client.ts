@@ -2,6 +2,9 @@ export type WSMessageType =
   | "task_progress"
   | "generation_complete"
   | "quota_warning"
+  | "chat:progress"
+  | "chat:complete"
+  | "chat:error"
   | "ping"
   | "pong";
 
@@ -56,6 +59,7 @@ export class WebSocketClient {
             this.lastPongTime = Date.now();
             return;
           }
+          console.log("[WS recv]", message.type, message.data);
           this.dispatch(message);
         } catch {
           // Invalid message format

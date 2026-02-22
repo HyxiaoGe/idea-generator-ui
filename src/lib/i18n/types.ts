@@ -152,6 +152,13 @@ export interface TranslationKeys {
     chatInputPlaceholder: string;
     waitingForGeneration: string;
     imageGenerated: string;
+    viewImage: string;
+    stageLoadingHistory: string;
+    stageThinking: string;
+    stageSaving: string;
+    stageGenerating: string;
+    thinkingMode: string;
+    thinkingProcess: string;
     defaultAssistantReply: string;
     sendFailed: string;
     userRole: string;
