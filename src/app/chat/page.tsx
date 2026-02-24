@@ -83,6 +83,9 @@ let _msgIdCounter = 0;
 function nextMsgId() {
   return ++_msgIdCounter;
 }
+function resetMsgIdCounter() {
+  _msgIdCounter = 0;
+}
 
 export default function ChatPage() {
   const router = useRouter();
@@ -97,7 +100,7 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [showHistory, setShowHistory] = useState(false);
-  const [includeThinking, setIncludeThinking] = useState(false);
+  const [includeThinking, setIncludeThinking] = useState(true);
   const [chatStage, setChatStage] = useState<ChatStage>(null);
   const [chatTaskId, setChatTaskId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -146,6 +149,7 @@ export default function ChatPage() {
     const savedSessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (savedSessionId) {
       const api = getApiClient();
+      resetMsgIdCounter();
       api
         .getChatHistory(savedSessionId)
         .then((history) => {
@@ -364,6 +368,7 @@ export default function ChatPage() {
   };
 
   const handleNewChat = useCallback(() => {
+    resetMsgIdCounter();
     setMessages([]);
     setCurrentImage("");
     setSessionId(null);
@@ -375,6 +380,7 @@ export default function ChatPage() {
   const handleSwitchSession = useCallback(async (newSessionId: string) => {
     const api = getApiClient();
     try {
+      resetMsgIdCounter();
       const history = await api.getChatHistory(newSessionId);
       setSessionId(newSessionId);
       setAspectRatio((history.aspect_ratio as AspectRatio) || "16:9");
