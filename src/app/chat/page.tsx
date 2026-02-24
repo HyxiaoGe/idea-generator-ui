@@ -21,13 +21,6 @@ import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -583,23 +576,6 @@ export default function ChatPage() {
               {t("chat.startConversationDesc")}
             </p>
 
-            {/* Aspect Ratio Selector */}
-            <div className="mb-8 flex items-center gap-2">
-              <span className="text-text-secondary text-sm">{t("chat.aspectRatioLabel")}</span>
-              <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as AspectRatio)}>
-                <SelectTrigger className="border-border bg-surface-elevated w-[100px] rounded-xl text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1:1">1:1</SelectItem>
-                  <SelectItem value="16:9">16:9</SelectItem>
-                  <SelectItem value="9:16">9:16</SelectItem>
-                  <SelectItem value="4:3">4:3</SelectItem>
-                  <SelectItem value="3:4">3:4</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex flex-wrap justify-center gap-3">
               {samplePrompts.map((prompt, index) => (
                 <motion.button
@@ -636,24 +612,6 @@ export default function ChatPage() {
             <div className="border-border bg-surface rounded-2xl border p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-text-primary font-semibold">{t("chat.currentImage")}</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-text-secondary text-xs">{t("chat.ratio")}</span>
-                  <Select
-                    value={aspectRatio}
-                    onValueChange={(v) => setAspectRatio(v as AspectRatio)}
-                  >
-                    <SelectTrigger className="border-border bg-surface-elevated h-8 w-[80px] rounded-lg text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1:1">1:1</SelectItem>
-                      <SelectItem value="16:9">16:9</SelectItem>
-                      <SelectItem value="9:16">9:16</SelectItem>
-                      <SelectItem value="4:3">4:3</SelectItem>
-                      <SelectItem value="3:4">3:4</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="bg-background mb-4 overflow-hidden rounded-xl">
