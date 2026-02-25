@@ -70,13 +70,20 @@ export function TemplateCard({
         </div>
       )}
 
-      {/* Hot badge */}
-      {template.use_count > 10000 && (
-        <div className="from-warning to-destructive absolute top-2 left-2 flex items-center gap-1 rounded-lg bg-gradient-to-r px-2 py-0.5 backdrop-blur-sm">
-          <Sparkles className="h-3 w-3 text-white" />
-          <span className="text-[10px] font-medium text-white">{t("common.hot")}</span>
-        </div>
-      )}
+      {/* Top-left badges */}
+      <div className="absolute top-2 left-2 flex items-center gap-1.5">
+        {template.use_count > 10000 && (
+          <div className="from-warning to-destructive flex items-center gap-1 rounded-lg bg-gradient-to-r px-2 py-0.5 backdrop-blur-sm">
+            <Sparkles className="h-3 w-3 text-white" />
+            <span className="text-[10px] font-medium text-white">{t("common.hot")}</span>
+          </div>
+        )}
+        {template.preview_4k_url && (
+          <div className="rounded-lg bg-black/50 px-1.5 py-0.5 backdrop-blur-sm">
+            <span className="text-[10px] font-bold text-white">4K</span>
+          </div>
+        )}
+      </div>
 
       {/* Favorite button */}
       <button

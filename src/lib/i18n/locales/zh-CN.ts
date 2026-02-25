@@ -79,6 +79,7 @@ export const zhCN: TranslationKeys = {
     generateWithTemplate: "使用此模板生成",
     showParams: "显示参数",
     hideParams: "隐藏参数",
+    view4K: "查看4K高清",
   },
   params: {
     model: "模型",

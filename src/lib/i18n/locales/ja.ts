@@ -79,6 +79,7 @@ export const ja: TranslationKeys = {
     generateWithTemplate: "テンプレートで生成",
     showParams: "パラメータを表示",
     hideParams: "パラメータを非表示",
+    view4K: "4K高画質を見る",
   },
   params: {
     model: "モデル",

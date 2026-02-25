@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, ThumbsUp, Sparkles, LogIn } from "lucide-react";
+import { Heart, ThumbsUp, Sparkles, LogIn, Maximize } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,13 +57,25 @@ export function TemplateDetailModal({
               {/* Preview image */}
               <div className="bg-surface relative flex max-h-[60vh] items-center justify-center">
                 <ProgressiveImage
-                  src={getImageUrl(detail.preview_image_url)}
+                  src={getImageUrl(detail.preview_4k_url || detail.preview_image_url)}
                   alt={getTemplateDisplayName(detail, lang)}
                   aspectRatio="auto"
                   objectFit="contain"
                   eager
                   className="max-h-[60vh] w-full"
                 />
+                {detail.preview_4k_url && (
+                  <a
+                    href={getImageUrl(detail.preview_4k_url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/80"
+                  >
+                    <Maximize className="h-3.5 w-3.5" />
+                    {t("home.view4K")}
+                  </a>
+                )}
               </div>
 
               {/* Content */}

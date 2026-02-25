@@ -79,6 +79,7 @@ export const en: TranslationKeys = {
     generateWithTemplate: "Generate with template",
     showParams: "Show parameters",
     hideParams: "Hide parameters",
+    view4K: "View 4K",
   },
   params: {
     model: "Model",

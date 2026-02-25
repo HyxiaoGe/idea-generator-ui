@@ -77,6 +77,7 @@ export interface TranslationKeys {
     generateWithTemplate: string;
     showParams: string;
     hideParams: string;
+    view4K: string;
   };
   params: {
     model: string;
