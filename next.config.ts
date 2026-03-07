@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const BACKEND_API_URL = process.env.API_BASE_URL || "http://localhost:8888/api";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: [
       {
