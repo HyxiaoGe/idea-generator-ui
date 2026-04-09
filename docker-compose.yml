@@ -10,6 +10,7 @@ services:
     environment:
       - API_BASE_URL=http://nano-banana-api:8000/api
     restart: unless-stopped
+    mem_limit: 256m
     networks:
       - nano-banana-network
 
